@@ -104,8 +104,9 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
   Widget _buildAiInfo() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.1),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.cardShadow,
       ),
       padding: const EdgeInsets.all(AppTheme.spacing20),
       child: Row(
@@ -128,7 +129,7 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
               'Habits are automatically created from your journal entries. AI suggestions help you stay on track with your goals.',
               style: TextStyle(
                 fontSize: AppTheme.fontSizeMedium,
-                color: AppTheme.textSecondary,
+                color: AppTheme.textPrimary,
                 height: 1.5,
               ),
             ),
