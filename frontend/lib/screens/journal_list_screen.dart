@@ -71,7 +71,7 @@ class _JournalListScreenState extends State<JournalListScreen> {
         ),
       ),
       child: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppTheme.spacing20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,7 +83,7 @@ class _JournalListScreenState extends State<JournalListScreen> {
                     'Review your past entries and track your progress over time.',
               ),
               const SizedBox(height: AppTheme.spacing30),
-              Expanded(child: _buildEntriesList()),
+              _buildEntriesList(),
             ],
           ),
         ),
@@ -135,9 +135,8 @@ class _JournalListScreenState extends State<JournalListScreen> {
       ),
     ];
 
-    return ListView.builder(
-      itemCount: entries.length,
-      itemBuilder: (context, index) => _buildEntryItem(entries[index]),
+    return Column(
+      children: entries.map((entry) => _buildEntryItem(entry)).toList(),
     );
   }
 
