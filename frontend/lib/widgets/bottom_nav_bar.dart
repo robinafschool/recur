@@ -14,14 +14,15 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: AppTheme.borderColor,
-            width: AppTheme.borderWidthMedium,
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.shadowColor,
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
-        ),
-        color: AppTheme.backgroundColor,
+        ],
       ),
       padding: const EdgeInsets.symmetric(
         vertical: AppTheme.spacing15,
@@ -30,67 +31,56 @@ class BottomNavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(0, 'journ'),
-          _buildNavItem(1, 'j entry'),
-          _buildNavItem(2, 'sched'),
+          _buildNavItem(0, '', Icons.insights),
+          _buildNavItem(1, '', Icons.book_outlined),
+          _buildNavItem(2, '', Icons.edit),
+          _buildNavItem(3, '', Icons.schedule),
+          _buildNavItem(4, '', Icons.settings_outlined),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(int index, String label) {
+  Widget _buildNavItem(int index, String label, IconData icon) {
     final isActive = index == currentIndex;
+    final isJournalEntry = index == 2; // Journal Entry is always special
 
-    if (isActive) {
+    // Journal Entry button - always larger circle that pops out
+    if (isJournalEntry) {
       return GestureDetector(
         onTap: () => onTap(index),
         child: Container(
-          width: 60,
-          height: 60,
+          width: 70,
+          height: 70,
           decoration: BoxDecoration(
-            color: AppTheme.activeGreen,
+            color: AppTheme.primaryColor,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: AppTheme.activeGreen,
-              width: AppTheme.borderWidthMedium,
-            ),
+            boxShadow: AppTheme.buttonShadow,
           ),
           child: Center(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: AppTheme.fontSizeSmall,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 28,
             ),
           ),
         ),
       );
     }
 
+    // Other buttons - icon only, darker when active
     return GestureDetector(
       onTap: () => onTap(index),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacing20,
-          vertical: AppTheme.spacing10,
-        ),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-          border: Border.all(
-            color: AppTheme.borderColor,
-            width: AppTheme.borderWidthMedium,
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: AppTheme.fontSizeSmall,
-          ),
+        width: 48,
+        height: 48,
+        padding: const EdgeInsets.all(AppTheme.spacing12),
+        child: Icon(
+          icon,
+          color: isActive
+              ? AppTheme.primaryColor
+              : AppTheme.textSecondary.withOpacity(0.6),
+          size: 24,
         ),
       ),
     );

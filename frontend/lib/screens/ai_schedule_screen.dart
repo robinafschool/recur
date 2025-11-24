@@ -1,107 +1,139 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../widgets/gradient_header.dart';
+import '../utils/route_generator.dart';
+import 'analytics_screen.dart';
+import 'journal_list_screen.dart';
+import 'journal_entry_screen.dart';
+import 'settings_screen.dart';
 
 class AiScheduleScreen extends StatefulWidget {
-  const AiScheduleScreen({super.key});
+  final bool showNavBar;
+  
+  const AiScheduleScreen({super.key, this.showNavBar = true});
 
   @override
   State<AiScheduleScreen> createState() => _AiScheduleScreenState();
 }
 
 class _AiScheduleScreenState extends State<AiScheduleScreen> {
+  static const int _currentIndex = 3; // Schedule is fourth item
+
   void _navigateToScreen(int index) {
-    final routes = ['/journal-list', '/journal-entry', '/ai-schedule'];
-    if (index != 2) {
-      // Don't navigate if already on ai-schedule
-      Navigator.pushReplacementNamed(context, routes[index]);
+    if (index == _currentIndex) return; // Don't navigate if already on this screen
+
+    final routes = ['/analytics', '/journal-list', '/journal-entry', '/ai-schedule', '/settings'];
+    final direction = getSlideDirection(_currentIndex, index);
+    
+    Navigator.pushReplacement(
+      context,
+      SlideRoute(
+        page: _getRouteWidget(routes[index]),
+        direction: direction,
+      ),
+    );
+  }
+
+  Widget _getRouteWidget(String route) {
+    switch (route) {
+      case '/analytics':
+        return const AnalyticsScreen();
+      case '/journal-list':
+        return const JournalListScreen();
+      case '/journal-entry':
+        return const JournalEntryScreen();
+      case '/ai-schedule':
+        return const AiScheduleScreen();
+      case '/settings':
+        return const SettingsScreen();
+      default:
+        return const AiScheduleScreen();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTheme.spacing20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: AppTheme.spacing30),
-                    _buildAiInfo(),
-                    const SizedBox(height: AppTheme.spacing20),
-                    _buildScheduledActions(),
-                  ],
-                ),
-              ),
-            ),
-            BottomNavBar(
-              currentIndex: 2,
-              onTap: _navigateToScreen,
-            ),
+    final body = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryColor.withOpacity(0.7),
+            AppTheme.primaryLight.withOpacity(0.5),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Schedule & Habits',
-          style: AppTheme.heading1,
-        ),
-        GestureDetector(
-          onTap: () => Navigator.pushNamed(context, '/settings'),
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.primaryColor,
-                width: AppTheme.borderWidthMedium,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppTheme.spacing20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const GradientHeader(
+                icon: Icons.schedule,
+                title: 'Schedule & Habits',
+                description:
+                    'Habits are automatically created from your journal entries. AI suggestions help you stay on track with your goals.',
               ),
-            ),
-            child: const Center(
-              child: Text(
-                'stgs',
-                style: TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontSize: AppTheme.fontSizeSmall,
-                ),
-              ),
-            ),
+              const SizedBox(height: AppTheme.spacing30),
+              _buildAiInfo(),
+              const SizedBox(height: AppTheme.spacing20),
+              _buildScheduledActions(),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+
+    if (!widget.showNavBar) {
+      return body;
+    }
+
+    return Scaffold(
+      body: body,
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _navigateToScreen,
+      ),
     );
   }
 
   Widget _buildAiInfo() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: AppTheme.borderWidthMedium,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        color: AppTheme.surfaceColor,
+        color: AppTheme.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
       ),
       padding: const EdgeInsets.all(AppTheme.spacing20),
-      child: const Text(
-        'Habits are automatically created from your journal entries. AI suggestions help you stay on track with your goals.',
-        style: TextStyle(
-          fontSize: AppTheme.fontSizeMedium,
-          color: Color(0xFFCCCCCC),
-          height: 1.6,
-        ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppTheme.spacing12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+            ),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacing15),
+          const Expanded(
+            child: Text(
+              'Habits are automatically created from your journal entries. AI suggestions help you stay on track with your goals.',
+              style: TextStyle(
+                fontSize: AppTheme.fontSizeMedium,
+                color: AppTheme.textSecondary,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -131,11 +163,9 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: AppTheme.borderWidthMedium,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.cardShadow,
       ),
       padding: const EdgeInsets.all(AppTheme.spacing20),
       child: Column(
@@ -157,12 +187,8 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
       margin: const EdgeInsets.only(bottom: AppTheme.spacing15),
       padding: const EdgeInsets.all(AppTheme.spacing15),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: const Color(0xFF444444),
-          width: AppTheme.borderWidthMedium,
-        ),
+        color: AppTheme.backgroundColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        color: AppTheme.surfaceColor,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,16 +206,23 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing8,
-                  vertical: AppTheme.spacing4,
+                  horizontal: AppTheme.spacing12,
+                  vertical: AppTheme.spacing8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                  color: action.type == 'Habit'
+                      ? AppTheme.primaryColor.withOpacity(0.2)
+                      : AppTheme.successColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusCircular),
                 ),
                 child: Text(
                   action.type,
-                  style: AppTheme.caption,
+                  style: AppTheme.caption.copyWith(
+                    color: action.type == 'Habit'
+                        ? AppTheme.primaryColor
+                        : AppTheme.successColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

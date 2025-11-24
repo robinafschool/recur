@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../utils/route_generator.dart';
+import 'analytics_screen.dart';
+import 'journal_list_screen.dart';
+import 'journal_entry_screen.dart';
+import 'ai_schedule_screen.dart';
+import 'settings_screen.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -17,44 +23,63 @@ class _HabitsScreenState extends State<HabitsScreen> {
   ];
 
   void _navigateToScreen(int index) {
-    final routes = ['/journal-list', '/journal-entry', '/ai-schedule'];
-    Navigator.pushReplacementNamed(context, routes[index]);
+    final routes = ['/analytics', '/journal-list', '/journal-entry', '/ai-schedule', '/settings'];
+    final direction = getSlideDirection(1, index); // Habits is like being on journal list
+    
+    Navigator.pushReplacement(
+      context,
+      SlideRoute(
+        page: _getRouteWidget(routes[index]),
+        direction: direction,
+      ),
+    );
+  }
+
+  Widget _getRouteWidget(String route) {
+    switch (route) {
+      case '/analytics':
+        return const AnalyticsScreen();
+      case '/journal-list':
+        return const JournalListScreen();
+      case '/journal-entry':
+        return const JournalEntryScreen();
+      case '/ai-schedule':
+        return const AiScheduleScreen();
+      case '/settings':
+        return const SettingsScreen();
+      default:
+        return const JournalListScreen();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacing20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: AppTheme.spacing30),
-                    _buildHabitsChecklist(),
-                    const SizedBox(height: AppTheme.spacing20),
-                    OutlinedButton(
-                      onPressed: () {
-                        // Show create habit dialog
-                      },
-                      child: const Text('create new habit btn'),
-                    ),
-                    const SizedBox(height: AppTheme.spacing20),
-                    _buildCreationDetails(),
-                  ],
-                ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacing20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: AppTheme.spacing30),
+              Expanded(child: _buildHabitsChecklist()),
+              const SizedBox(height: AppTheme.spacing20),
+              OutlinedButton(
+                onPressed: () {
+                  // Show create habit dialog
+                },
+                child: const Text('create new habit btn'),
               ),
-            ),
-            BottomNavBar(
-              currentIndex: -1, // No active item on habits screen
-              onTap: _navigateToScreen,
-            ),
-          ],
+              const SizedBox(height: AppTheme.spacing20),
+              _buildCreationDetails(),
+            ],
+          ),
         ),
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 1, // Journal is middle item
+        onTap: _navigateToScreen,
       ),
     );
   }
@@ -73,19 +98,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.primaryColor,
-                width: AppTheme.borderWidthMedium,
-              ),
+              boxShadow: AppTheme.softShadow,
             ),
             child: const Center(
-              child: Text(
-                'stgs',
-                style: TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontSize: AppTheme.fontSizeSmall,
-                ),
+              child: Icon(
+                Icons.settings_outlined,
+                color: AppTheme.primaryColor,
+                size: 24,
               ),
             ),
           ),
@@ -97,11 +118,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _buildHabitsChecklist() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: AppTheme.borderWidthMedium,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.cardShadow,
       ),
       padding: const EdgeInsets.all(AppTheme.spacing20),
       constraints: const BoxConstraints(minHeight: 400),
@@ -136,20 +155,22 @@ class _HabitsScreenState extends State<HabitsScreen> {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppTheme.borderColor,
-                  width: AppTheme.borderWidthMedium,
-                ),
-                borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                borderRadius: BorderRadius.circular(6),
                 color: habit.isCompleted
                     ? AppTheme.primaryColor
-                    : Colors.transparent,
+                    : AppTheme.backgroundColor,
+                border: Border.all(
+                  color: habit.isCompleted
+                      ? AppTheme.primaryColor
+                      : AppTheme.borderColor,
+                  width: 2,
+                ),
               ),
               child: habit.isCompleted
                   ? const Icon(
                       Icons.check,
                       size: 16,
-                      color: AppTheme.textPrimary,
+                      color: Colors.white,
                     )
                   : null,
             ),
@@ -169,11 +190,9 @@ class _HabitsScreenState extends State<HabitsScreen> {
   Widget _buildCreationDetails() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: AppTheme.borderWidthMedium,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.cardShadow,
       ),
       padding: const EdgeInsets.all(AppTheme.spacing20),
       child: const Column(

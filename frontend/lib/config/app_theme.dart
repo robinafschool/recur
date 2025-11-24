@@ -8,16 +8,20 @@ class AppTheme {
   AppTheme._();
 
   // ============= Colors =============
-  static const Color backgroundColor = Color(0xFF1A1A1A);
-  static const Color surfaceColor = Color(0xFF2A2A2A);
-  static const Color primaryColor = Color(0xFF4A9EFF);
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color(0xFF888888);
-  static const Color textTertiary = Color(0xFF666666);
-  static const Color borderColor = Colors.white;
-  static const Color dividerColor = Color(0xFF333333);
-  static const Color activeGreen = Color(0xFF2D5A2D);
-  static const Color errorColor = Color(0xFFFF4444);
+  static const Color backgroundColor = Color(0xFFF5F7FA);
+  static const Color surfaceColor = Color(0xFFFFFFFF);
+  static const Color primaryColor = Color(0xFFFF6B35); // Orange/Red
+  static const Color primaryLight = Color(0xFFFF8C65);
+  static const Color primaryDark = Color(0xFFE55A2B);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color textTertiary = Color(0xFF999999);
+  static const Color borderColor = Color(0xFFE0E0E0);
+  static const Color dividerColor = Color(0xFFEEEEEE);
+  static const Color activeColor = Color(0xFFFF6B35);
+  static const Color errorColor = Color(0xFFEF5350);
+  static const Color successColor = Color(0xFF66BB6A);
+  static const Color shadowColor = Color(0x1A000000);
 
   // ============= Spacing =============
   static const double spacing4 = 4.0;
@@ -32,10 +36,11 @@ class AppTheme {
   static const double spacing60 = 60.0;
 
   // ============= Border Radius =============
-  static const double radiusSmall = 4.0;
-  static const double radiusMedium = 8.0;
-  static const double radiusLarge = 13.0;
-  static const double radiusCircular = 50.0;
+  static const double radiusSmall = 12.0;
+  static const double radiusMedium = 16.0;
+  static const double radiusLarge = 24.0;
+  static const double radiusXLarge = 32.0;
+  static const double radiusCircular = 999.0;
 
   // ============= Border Width =============
   static const double borderWidthThin = 1.0;
@@ -91,16 +96,42 @@ class AppTheme {
     color: textPrimary,
   );
 
+  // ============= Shadows =============
+  static List<BoxShadow> get softShadow => [
+        BoxShadow(
+          color: shadowColor,
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: shadowColor,
+          blurRadius: 20,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static List<BoxShadow> get buttonShadow => [
+        BoxShadow(
+          color: primaryColor.withOpacity(0.3),
+          blurRadius: 15,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
   // ============= Theme Data =============
   static ThemeData get theme {
     return ThemeData(
       scaffoldBackgroundColor: backgroundColor,
       fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI',
       useMaterial3: true,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         primary: primaryColor,
         surface: surfaceColor,
         error: errorColor,
+        background: backgroundColor,
       ),
       textTheme: const TextTheme(
         displayLarge: logo,
@@ -112,54 +143,84 @@ class AppTheme {
         labelLarge: buttonText,
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: false,
+        filled: true,
+        fillColor: surfaceColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusSmall),
+          borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: const BorderSide(
             color: borderColor,
-            width: borderWidthMedium,
+            width: borderWidthThin,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusSmall),
+          borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: const BorderSide(
             color: borderColor,
-            width: borderWidthMedium,
+            width: borderWidthThin,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusSmall),
+          borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: const BorderSide(
             color: primaryColor,
             width: borderWidthMedium,
           ),
         ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: spacing20,
+          vertical: spacing16,
+        ),
         labelStyle: bodySecondary,
-        hintStyle: const TextStyle(color: textSecondary),
+        hintStyle: const TextStyle(color: textTertiary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
-          foregroundColor: textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: spacing16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusSmall),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(
+            vertical: spacing16,
+            horizontal: spacing20,
           ),
-          textStyle: buttonText,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusMedium),
+          ),
+          textStyle: buttonText.copyWith(color: Colors.white),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: textPrimary,
+          backgroundColor: surfaceColor,
           side: const BorderSide(
             color: borderColor,
-            width: borderWidthMedium,
+            width: borderWidthThin,
           ),
-          padding: const EdgeInsets.symmetric(vertical: spacing16),
+          padding: const EdgeInsets.symmetric(
+            vertical: spacing16,
+            horizontal: spacing20,
+          ),
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radiusSmall),
+            borderRadius: BorderRadius.circular(radiusMedium),
           ),
           textStyle: buttonText,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: surfaceColor,
+        shadowColor: shadowColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusLarge),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        elevation: 0,
+        backgroundColor: surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusLarge),
         ),
       ),
     );

@@ -8,6 +8,7 @@ import 'screens/ai_schedule_screen.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/focus_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/main_navigation_screen.dart';
 
 void main() {
   runApp(const RecurApp());
@@ -25,6 +26,7 @@ class RecurApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
+        '/home': (context) => const MainNavigationScreen(initialIndex: 1),
         '/habits': (context) => const HabitsScreen(),
         '/journal-list': (context) => const JournalListScreen(),
         '/journal-entry': (context) => const JournalEntryScreen(),

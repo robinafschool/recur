@@ -1,89 +1,105 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../widgets/gradient_header.dart';
+import '../utils/route_generator.dart';
+import 'analytics_screen.dart';
+import 'journal_entry_screen.dart';
+import 'ai_schedule_screen.dart';
+import 'settings_screen.dart';
 
 class JournalListScreen extends StatefulWidget {
-  const JournalListScreen({super.key});
+  final bool showNavBar;
+
+  const JournalListScreen({super.key, this.showNavBar = true});
 
   @override
   State<JournalListScreen> createState() => _JournalListScreenState();
 }
 
 class _JournalListScreenState extends State<JournalListScreen> {
+  static const int _currentIndex = 1; // Journal Entries is middle item
+
   void _navigateToScreen(int index) {
-    final routes = ['/journal-list', '/journal-entry', '/ai-schedule'];
-    if (index != 0) {
-      // Don't navigate if already on journal list
-      Navigator.pushReplacementNamed(context, routes[index]);
+    if (index == _currentIndex)
+      return; // Don't navigate if already on this screen
+
+    final routes = [
+      '/analytics',
+      '/journal-list',
+      '/journal-entry',
+      '/ai-schedule',
+      '/settings',
+    ];
+    final direction = getSlideDirection(_currentIndex, index);
+
+    Navigator.pushReplacement(
+      context,
+      SlideRoute(page: _getRouteWidget(routes[index]), direction: direction),
+    );
+  }
+
+  Widget _getRouteWidget(String route) {
+    switch (route) {
+      case '/analytics':
+        return const AnalyticsScreen();
+      case '/journal-list':
+        return const JournalListScreen();
+      case '/journal-entry':
+        return const JournalEntryScreen();
+      case '/ai-schedule':
+        return const AiScheduleScreen();
+      case '/settings':
+        return const SettingsScreen();
+      default:
+        return const JournalListScreen();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacing20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: AppTheme.spacing30),
-                    OutlinedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/analytics'),
-                      child: const Text('graph'),
-                    ),
-                    const SizedBox(height: AppTheme.spacing20),
-                    Expanded(child: _buildEntriesList()),
-                  ],
-                ),
-              ),
-            ),
-            BottomNavBar(
-              currentIndex: 0,
-              onTap: _navigateToScreen,
-            ),
+    final body = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryColor.withOpacity(0.7),
+            AppTheme.primaryLight.withOpacity(0.5),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Journal Entries',
-          style: AppTheme.heading1,
-        ),
-        GestureDetector(
-          onTap: () => Navigator.pushNamed(context, '/settings'),
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.primaryColor,
-                width: AppTheme.borderWidthMedium,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacing20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const GradientHeader(
+                icon: Icons.book_outlined,
+                title: 'Journal Entries',
+                description:
+                    'Review your past entries and track your progress over time.',
               ),
-            ),
-            child: const Center(
-              child: Text(
-                'stgs',
-                style: TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontSize: AppTheme.fontSizeSmall,
-                ),
-              ),
-            ),
+              const SizedBox(height: AppTheme.spacing30),
+              Expanded(child: _buildEntriesList()),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+
+    if (!widget.showNavBar) {
+      return body;
+    }
+
+    return Scaffold(
+      body: body,
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _navigateToScreen,
+      ),
     );
   }
 
@@ -132,11 +148,9 @@ class _JournalListScreenState extends State<JournalListScreen> {
         margin: const EdgeInsets.only(bottom: AppTheme.spacing15),
         padding: const EdgeInsets.all(AppTheme.spacing20),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: AppTheme.borderColor,
-            width: AppTheme.borderWidthMedium,
-          ),
-          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          boxShadow: AppTheme.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,10 +158,7 @@ class _JournalListScreenState extends State<JournalListScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  entry.date,
-                  style: AppTheme.bodySecondary,
-                ),
+                Text(entry.date, style: AppTheme.bodySecondary),
                 Text(
                   entry.time,
                   style: AppTheme.caption.copyWith(
@@ -160,8 +171,8 @@ class _JournalListScreenState extends State<JournalListScreen> {
             Text(
               entry.preview,
               style: const TextStyle(
-                fontSize: AppTheme.fontSizeLarge,
-                color: Color(0xFFCCCCCC),
+                fontSize: AppTheme.fontSizeMedium,
+                color: AppTheme.textSecondary,
                 height: 1.5,
               ),
               maxLines: 2,
@@ -169,27 +180,30 @@ class _JournalListScreenState extends State<JournalListScreen> {
             ),
             const SizedBox(height: AppTheme.spacing10),
             Wrap(
-              spacing: AppTheme.spacing10,
+              spacing: AppTheme.spacing8,
+              runSpacing: AppTheme.spacing8,
               children: entry.tags
-                  .map((tag) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppTheme.spacing8,
-                          vertical: AppTheme.spacing4,
+                  .map(
+                    (tag) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacing12,
+                        vertical: AppTheme.spacing8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusCircular,
                         ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusSmall),
-                          border: Border.all(
-                            color: const Color(0xFF444444),
-                            width: AppTheme.borderWidthThin,
-                          ),
+                      ),
+                      child: Text(
+                        tag,
+                        style: AppTheme.caption.copyWith(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.w500,
                         ),
-                        child: Text(
-                          tag,
-                          style: AppTheme.caption,
-                        ),
-                      ))
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ],
@@ -212,4 +226,3 @@ class JournalEntry {
     required this.tags,
   });
 }
-

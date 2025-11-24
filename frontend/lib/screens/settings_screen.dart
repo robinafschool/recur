@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../utils/route_generator.dart';
+import '../widgets/gradient_header.dart';
+import 'analytics_screen.dart';
+import 'journal_list_screen.dart';
+import 'journal_entry_screen.dart';
+import 'ai_schedule_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final bool showNavBar;
+
+  const SettingsScreen({super.key, this.showNavBar = true});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -13,90 +21,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _habitReminders = true;
   bool _journalPrompts = true;
   bool _aiSuggestions = false;
+  static const int _currentIndex = 4; // Settings is rightmost item
 
   void _navigateToScreen(int index) {
-    final routes = ['/journal-list', '/journal-entry', '/ai-schedule'];
-    Navigator.pushReplacementNamed(context, routes[index]);
+    if (index == _currentIndex)
+      return; // Don't navigate if already on this screen
+
+    final routes = [
+      '/analytics',
+      '/journal-list',
+      '/journal-entry',
+      '/ai-schedule',
+      '/settings',
+    ];
+    final direction = getSlideDirection(_currentIndex, index);
+
+    Navigator.pushReplacement(
+      context,
+      SlideRoute(page: _getRouteWidget(routes[index]), direction: direction),
+    );
+  }
+
+  Widget _getRouteWidget(String route) {
+    switch (route) {
+      case '/analytics':
+        return const AnalyticsScreen();
+      case '/journal-list':
+        return const JournalListScreen();
+      case '/journal-entry':
+        return const JournalEntryScreen();
+      case '/ai-schedule':
+        return const AiScheduleScreen();
+      case '/settings':
+        return const SettingsScreen();
+      default:
+        return const SettingsScreen();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTheme.spacing20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: AppTheme.spacing30),
-                    _buildAccountInfo(),
-                    const SizedBox(height: AppTheme.spacing20),
-                    _buildNotificationSettings(),
-                    const SizedBox(height: AppTheme.spacing20),
-                    _buildPrivacySettings(),
-                    const SizedBox(height: AppTheme.spacing20),
-                    _buildAppearanceSettings(),
-                    const SizedBox(height: AppTheme.spacing20),
-                    _buildAboutSettings(),
-                    const SizedBox(height: AppTheme.spacing20),
-                    _buildLogoutButton(),
-                  ],
-                ),
-              ),
-            ),
-            BottomNavBar(
-              currentIndex: -1,
-              onTap: _navigateToScreen,
-            ),
+    final body = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryColor.withOpacity(0.7),
+            AppTheme.primaryLight.withOpacity(0.5),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Settings',
-          style: AppTheme.heading1,
-        ),
-        GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.borderColor,
-                width: AppTheme.borderWidthMedium,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppTheme.spacing20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const GradientHeader(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                description:
+                    'Manage your account, preferences, and app settings.',
               ),
-            ),
-            child: const Icon(
-              Icons.arrow_back,
-              color: AppTheme.textPrimary,
-              size: 20,
-            ),
+              const SizedBox(height: AppTheme.spacing30),
+              _buildAccountInfo(),
+              const SizedBox(height: AppTheme.spacing20),
+              _buildNotificationSettings(),
+              const SizedBox(height: AppTheme.spacing20),
+              _buildPrivacySettings(),
+              const SizedBox(height: AppTheme.spacing20),
+              _buildAppearanceSettings(),
+              const SizedBox(height: AppTheme.spacing20),
+              _buildAboutSettings(),
+              const SizedBox(height: AppTheme.spacing20),
+              _buildLogoutButton(),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+
+    if (!widget.showNavBar) {
+      return body;
+    }
+
+    return Scaffold(
+      body: body,
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _navigateToScreen,
+      ),
     );
   }
 
   Widget _buildAccountInfo() {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: AppTheme.borderWidthMedium,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.cardShadow,
       ),
       padding: const EdgeInsets.all(AppTheme.spacing20),
       child: Row(
@@ -106,18 +131,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.borderColor,
-                width: AppTheme.borderWidthMedium,
+              gradient: LinearGradient(
+                colors: [AppTheme.primaryColor, AppTheme.primaryLight],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              color: AppTheme.surfaceColor,
             ),
             child: const Center(
               child: Text(
                 'JD',
                 style: TextStyle(
                   fontSize: AppTheme.fontSizeHuge,
-                  color: AppTheme.textPrimary,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -136,10 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 SizedBox(height: 5),
-                Text(
-                  'john.doe@example.com',
-                  style: AppTheme.bodySecondary,
-                ),
+                Text('john.doe@example.com', style: AppTheme.bodySecondary),
               ],
             ),
           ),
@@ -212,10 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       items: [
         SettingItem(
           label: 'Theme',
-          trailing: const Text(
-            'Dark',
-            style: AppTheme.bodySecondary,
-          ),
+          trailing: const Text('Dark', style: AppTheme.bodySecondary),
           onTap: () {},
         ),
       ],
@@ -228,10 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       items: [
         SettingItem(
           label: 'Version',
-          trailing: const Text(
-            '1.0.0',
-            style: AppTheme.bodySecondary,
-          ),
+          trailing: const Text('1.0.0', style: AppTheme.bodySecondary),
         ),
         SettingItem(
           label: 'Terms of Service',
@@ -261,20 +278,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: AppTheme.borderWidthMedium,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.cardShadow,
       ),
       padding: const EdgeInsets.all(AppTheme.spacing20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTheme.heading2,
-          ),
+          Text(title, style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing20),
           ...items.asMap().entries.map((entry) {
             final index = entry.key;
@@ -290,7 +302,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: isLast ? Colors.transparent : AppTheme.dividerColor,
+                      color: isLast
+                          ? Colors.transparent
+                          : AppTheme.dividerColor,
                       width: AppTheme.borderWidthThin,
                     ),
                   ),
@@ -298,10 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      item.label,
-                      style: AppTheme.body,
-                    ),
+                    Text(item.label, style: AppTheme.body),
                     item.trailing,
                   ],
                 ),
@@ -318,24 +329,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: () => onChanged(!isActive),
       child: Container(
         width: 50,
-        height: 26,
+        height: 28,
         decoration: BoxDecoration(
-          color: isActive ? AppTheme.primaryColor : Colors.transparent,
-          border: Border.all(
-            color: isActive ? AppTheme.primaryColor : AppTheme.borderColor,
-            width: AppTheme.borderWidthMedium,
-          ),
-          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          color: isActive ? AppTheme.primaryColor : AppTheme.borderColor,
+          borderRadius: BorderRadius.circular(AppTheme.radiusCircular),
         ),
-        child: Align(
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
           alignment: isActive ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             margin: const EdgeInsets.all(3),
-            width: 18,
-            height: 18,
-            decoration: const BoxDecoration(
-              color: AppTheme.textPrimary,
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: Colors.white,
               shape: BoxShape.circle,
+              boxShadow: AppTheme.softShadow,
             ),
           ),
         ),
@@ -366,10 +375,5 @@ class SettingItem {
   final Widget trailing;
   final VoidCallback? onTap;
 
-  SettingItem({
-    required this.label,
-    required this.trailing,
-    this.onTap,
-  });
+  SettingItem({required this.label, required this.trailing, this.onTap});
 }
-

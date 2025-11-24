@@ -39,11 +39,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: AppTheme.spacing60),
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppTheme.borderColor,
-                        width: AppTheme.borderWidthMedium,
-                      ),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      color: AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                      boxShadow: AppTheme.cardShadow,
                     ),
                     padding: const EdgeInsets.all(AppTheme.spacing30),
                     child: Column(
@@ -74,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ElevatedButton(
                           onPressed: () {
                             // Navigate to habits screen after login
-                            Navigator.pushReplacementNamed(context, '/habits');
+                            Navigator.pushReplacementNamed(context, '/home');
                           },
                           child: const Text('Sign In'),
                         ),
@@ -89,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         OutlinedButton(
                           onPressed: () {
                             // Handle Google sign in
-                            Navigator.pushReplacementNamed(context, '/habits');
+                            Navigator.pushReplacementNamed(context, '/home');
                           },
                           child: const Text('Sign in with Google'),
                         ),
