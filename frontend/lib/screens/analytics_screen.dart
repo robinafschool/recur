@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../utils/route_generator.dart';
-import '../widgets/gradient_header.dart';
-import 'journal_list_screen.dart';
-import 'journal_entry_screen.dart';
-import 'ai_schedule_screen.dart';
-import 'settings_screen.dart';
+import '../widgets/widgets.dart';
+import '../navigation/navigation.dart';
+import '../models/models.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   final bool showNavBar;
-  
+
   const AnalyticsScreen({super.key, this.showNavBar = true});
 
   @override
@@ -19,91 +15,43 @@ class AnalyticsScreen extends StatefulWidget {
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   int _selectedFilter = 0;
-  static const int _currentIndex = 0; // Insights is left item
 
   void _navigateToScreen(int index) {
-    if (index == _currentIndex) return; // Don't navigate if already on this screen
-
-    final routes = ['/analytics', '/journal-list', '/journal-entry', '/ai-schedule', '/settings'];
-    final direction = getSlideDirection(_currentIndex, index);
-    
-    Navigator.pushReplacement(
-      context,
-      SlideRoute(
-        page: _getRouteWidget(routes[index]),
-        direction: direction,
-      ),
-    );
-  }
-
-  Widget _getRouteWidget(String route) {
-    switch (route) {
-      case '/analytics':
-        return const AnalyticsScreen();
-      case '/journal-list':
-        return const JournalListScreen();
-      case '/journal-entry':
-        return const JournalEntryScreen();
-      case '/ai-schedule':
-        return const AiScheduleScreen();
-      case '/settings':
-        return const SettingsScreen();
-      default:
-        return const AnalyticsScreen();
-    }
+    AppNavigator.navigateToIndex(context, NavIndex.analytics, index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final body = Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.7),
-            AppTheme.primaryLight.withOpacity(0.5),
+    return GradientScaffold(
+      bottomNavigationBar: widget.showNavBar
+          ? BottomNavBar(
+              currentIndex: NavIndex.analytics,
+              onTap: _navigateToScreen,
+            )
+          : null,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.spacing20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const GradientHeader(
+              icon: Icons.insights,
+              title: 'Analytics & Trends',
+              description:
+                  'Track your progress, view statistics, and analyze your habits over time.',
+            ),
+            const SizedBox(height: AppTheme.spacing30),
+            _buildFilterBar(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildStatsGrid(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildChartBox('Habit Progress'),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildChartBox('Journal Entries Over Time'),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildStreakBox(),
           ],
         ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacing20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const GradientHeader(
-                icon: Icons.insights,
-                title: 'Analytics & Trends',
-                description:
-                    'Track your progress, view statistics, and analyze your habits over time.',
-              ),
-              const SizedBox(height: AppTheme.spacing30),
-              _buildFilterBar(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildStatsGrid(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildChartBox('Habit Progress'),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildChartBox('Journal Entries Over Time'),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildStreakBox(),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (!widget.showNavBar) {
-      return body;
-    }
-
-    return Scaffold(
-      body: body,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _navigateToScreen,
       ),
     );
   }
@@ -168,13 +116,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildStatCard(String value, String label) {
-    return Container(
-      padding: const EdgeInsets.all(AppTheme.spacing20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
+    return AppCard(
       child: Column(
         children: [
           Text(
@@ -197,20 +139,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildChartBox(String title) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTheme.heading2,
-          ),
+          Text(title, style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing15),
           Container(
             height: 200,
@@ -237,57 +170,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       StreakItem(name: 'Meditation', days: 23),
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Current Streaks',
-            style: AppTheme.heading2,
-          ),
+          const Text('Current Streaks', style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing15),
-          ...streaks.map((streak) => Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppTheme.spacing10,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: AppTheme.dividerColor,
-                      width: AppTheme.borderWidthThin,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      streak.name,
-                      style: AppTheme.body,
-                    ),
-                    Text(
-                      '${streak.days} days',
-                      style: AppTheme.body,
-                    ),
-                  ],
-                ),
-              )),
+          ...streaks.asMap().entries.map((entry) {
+            final isLast = entry.key == streaks.length - 1;
+            return LabeledListItem(
+              label: entry.value.name,
+              trailing: Text('${entry.value.days} days', style: AppTheme.body),
+              showBottomBorder: !isLast,
+            );
+          }),
         ],
       ),
     );
   }
 }
-
-class StreakItem {
-  final String name;
-  final int days;
-
-  StreakItem({required this.name, required this.days});
-}
-

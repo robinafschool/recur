@@ -109,7 +109,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: hitboxColor.withOpacity(_opacityAnimation.value),
+              color: hitboxColor.withValues(alpha: _opacityAnimation.value),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -121,7 +121,7 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                 widget.icon,
                 color: widget.isActive
                     ? AppTheme.primaryColor
-                    : AppTheme.textSecondary.withOpacity(0.6),
+                    : AppTheme.textSecondary.withValues(alpha: 0.6),
                 size: 26,
               ),
             ),

@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
 import 'config/app_theme.dart';
-import 'screens/login_screen.dart';
-import 'screens/habits_screen.dart';
-import 'screens/journal_list_screen.dart';
-import 'screens/journal_entry_screen.dart';
-import 'screens/ai_schedule_screen.dart';
-import 'screens/analytics_screen.dart';
-import 'screens/focus_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/main_navigation_screen.dart';
+import 'navigation/navigation.dart';
+import 'screens/screens.dart';
 
 void main() {
   runApp(const RecurApp());
@@ -23,17 +16,17 @@ class RecurApp extends StatelessWidget {
       title: 'Recur',
       theme: AppTheme.theme,
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login',
+      initialRoute: AppRoutes.login,
       routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const MainNavigationScreen(initialIndex: 1),
-        '/habits': (context) => const HabitsScreen(),
-        '/journal-list': (context) => const JournalListScreen(),
-        '/journal-entry': (context) => const JournalEntryScreen(),
-        '/ai-schedule': (context) => const AiScheduleScreen(),
-        '/analytics': (context) => const AnalyticsScreen(),
-        '/focus': (context) => const FocusScreen(),
-        '/settings': (context) => const SettingsScreen(),
+        AppRoutes.login: (context) => const LoginScreen(),
+        AppRoutes.home: (context) => const MainNavigationScreen(initialIndex: 1),
+        AppRoutes.habits: (context) => const HabitsScreen(),
+        AppRoutes.journalList: (context) => const JournalListScreen(),
+        AppRoutes.journalEntry: (context) => const JournalEntryScreen(),
+        AppRoutes.aiSchedule: (context) => const AiScheduleScreen(),
+        AppRoutes.analytics: (context) => const AnalyticsScreen(),
+        AppRoutes.focus: (context) => const FocusScreen(),
+        AppRoutes.settings: (context) => const SettingsScreen(),
       },
     );
   }

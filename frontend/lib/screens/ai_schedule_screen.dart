@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../widgets/gradient_header.dart';
-import '../utils/route_generator.dart';
-import 'analytics_screen.dart';
-import 'journal_list_screen.dart';
-import 'journal_entry_screen.dart';
-import 'settings_screen.dart';
+import '../widgets/widgets.dart';
+import '../navigation/navigation.dart';
+import '../models/models.dart';
 
 class AiScheduleScreen extends StatefulWidget {
   final bool showNavBar;
-  
+
   const AiScheduleScreen({super.key, this.showNavBar = true});
 
   @override
@@ -18,97 +14,42 @@ class AiScheduleScreen extends StatefulWidget {
 }
 
 class _AiScheduleScreenState extends State<AiScheduleScreen> {
-  static const int _currentIndex = 3; // Schedule is fourth item
-
   void _navigateToScreen(int index) {
-    if (index == _currentIndex) return; // Don't navigate if already on this screen
-
-    final routes = ['/analytics', '/journal-list', '/journal-entry', '/ai-schedule', '/settings'];
-    final direction = getSlideDirection(_currentIndex, index);
-    
-    Navigator.pushReplacement(
-      context,
-      SlideRoute(
-        page: _getRouteWidget(routes[index]),
-        direction: direction,
-      ),
-    );
-  }
-
-  Widget _getRouteWidget(String route) {
-    switch (route) {
-      case '/analytics':
-        return const AnalyticsScreen();
-      case '/journal-list':
-        return const JournalListScreen();
-      case '/journal-entry':
-        return const JournalEntryScreen();
-      case '/ai-schedule':
-        return const AiScheduleScreen();
-      case '/settings':
-        return const SettingsScreen();
-      default:
-        return const AiScheduleScreen();
-    }
+    AppNavigator.navigateToIndex(context, NavIndex.aiSchedule, index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final body = Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.7),
-            AppTheme.primaryLight.withOpacity(0.5),
+    return GradientScaffold(
+      bottomNavigationBar: widget.showNavBar
+          ? BottomNavBar(
+              currentIndex: NavIndex.aiSchedule,
+              onTap: _navigateToScreen,
+            )
+          : null,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.spacing20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const GradientHeader(
+              icon: Icons.schedule,
+              title: 'Schedule & Habits',
+              description:
+                  'Habits are automatically created from your journal entries. AI suggestions help you stay on track with your goals.',
+            ),
+            const SizedBox(height: AppTheme.spacing30),
+            _buildAiInfo(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildScheduledActions(),
           ],
         ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacing20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const GradientHeader(
-                icon: Icons.schedule,
-                title: 'Schedule & Habits',
-                description:
-                    'Habits are automatically created from your journal entries. AI suggestions help you stay on track with your goals.',
-              ),
-              const SizedBox(height: AppTheme.spacing30),
-              _buildAiInfo(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildScheduledActions(),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (!widget.showNavBar) {
-      return body;
-    }
-
-    return Scaffold(
-      body: body,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _navigateToScreen,
       ),
     );
   }
 
   Widget _buildAiInfo() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Row(
         children: [
           Container(
@@ -162,20 +103,11 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
       ),
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Today\'s Tasks',
-            style: AppTheme.heading2,
-          ),
+          const Text("Today's Tasks", style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing15),
           ...actions.map((action) => _buildActionItem(action)),
         ],
@@ -184,6 +116,8 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
   }
 
   Widget _buildActionItem(ScheduledAction action) {
+    final isHabit = action.type == 'Habit';
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spacing15),
       padding: const EdgeInsets.all(AppTheme.spacing15),
@@ -205,26 +139,12 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing12,
-                  vertical: AppTheme.spacing8,
-                ),
-                decoration: BoxDecoration(
-                  color: action.type == 'Habit'
-                      ? AppTheme.primaryColor.withOpacity(0.2)
-                      : AppTheme.successColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusCircular),
-                ),
-                child: Text(
-                  action.type,
-                  style: AppTheme.caption.copyWith(
-                    color: action.type == 'Habit'
-                        ? AppTheme.primaryColor
-                        : AppTheme.successColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              TagChip(
+                label: action.type,
+                backgroundColor: isHabit
+                    ? AppTheme.primaryColor.withValues(alpha: 0.2)
+                    : AppTheme.successColor.withValues(alpha: 0.2),
+                textColor: isHabit ? AppTheme.primaryColor : AppTheme.successColor,
               ),
             ],
           ),
@@ -249,7 +169,7 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
             ),
             child: Text(
               action.reason,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppTheme.fontSizeSmall,
                 color: AppTheme.textSecondary,
                 fontStyle: FontStyle.italic,
@@ -268,7 +188,7 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
                     ),
                   ),
                   child: Text(
-                    action.type == 'Habit' ? 'Skip' : 'Dismiss',
+                    isHabit ? 'Skip' : 'Dismiss',
                     style: const TextStyle(fontSize: AppTheme.fontSizeSmall),
                   ),
                 ),
@@ -283,7 +203,7 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
                     ),
                   ),
                   child: Text(
-                    action.type == 'Habit' ? 'Complete' : 'Accept',
+                    isHabit ? 'Complete' : 'Accept',
                     style: const TextStyle(fontSize: AppTheme.fontSizeSmall),
                   ),
                 ),
@@ -295,18 +215,3 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
     );
   }
 }
-
-class ScheduledAction {
-  final String time;
-  final String type;
-  final String content;
-  final String reason;
-
-  ScheduledAction({
-    required this.time,
-    required this.type,
-    required this.content,
-    required this.reason,
-  });
-}
-

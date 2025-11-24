@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../utils/route_generator.dart';
-import 'analytics_screen.dart';
-import 'journal_list_screen.dart';
-import 'journal_entry_screen.dart';
-import 'ai_schedule_screen.dart';
-import 'settings_screen.dart';
+import '../widgets/widgets.dart';
+import '../navigation/navigation.dart';
+import '../models/models.dart';
 
 class FocusScreen extends StatefulWidget {
   const FocusScreen({super.key});
@@ -24,33 +20,7 @@ class _FocusScreenState extends State<FocusScreen> {
   ];
 
   void _navigateToScreen(int index) {
-    final routes = ['/analytics', '/journal-list', '/journal-entry', '/ai-schedule', '/settings'];
-    final direction = getSlideDirection(1, index); // Focus is like being on journal list
-    
-    Navigator.pushReplacement(
-      context,
-      SlideRoute(
-        page: _getRouteWidget(routes[index]),
-        direction: direction,
-      ),
-    );
-  }
-
-  Widget _getRouteWidget(String route) {
-    switch (route) {
-      case '/analytics':
-        return const AnalyticsScreen();
-      case '/journal-list':
-        return const JournalListScreen();
-      case '/journal-entry':
-        return const JournalEntryScreen();
-      case '/ai-schedule':
-        return const AiScheduleScreen();
-      case '/settings':
-        return const SettingsScreen();
-      default:
-        return const JournalListScreen();
-    }
+    AppNavigator.navigateToIndex(context, NavIndex.journalList, index);
   }
 
   @override
@@ -62,7 +32,10 @@ class _FocusScreenState extends State<FocusScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeader(),
+              ScreenHeader(
+                title: 'Focus Mode',
+                onSettingsTap: () => Navigator.pushNamed(context, AppRoutes.settings),
+              ),
               const SizedBox(height: AppTheme.spacing40),
               _buildTimerDisplay(),
               const SizedBox(height: AppTheme.spacing30),
@@ -81,40 +54,9 @@ class _FocusScreenState extends State<FocusScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavBar(
-        currentIndex: 1, // Journal is middle item
+        currentIndex: NavIndex.journalList,
         onTap: _navigateToScreen,
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Focus Mode',
-          style: AppTheme.heading1,
-        ),
-        GestureDetector(
-          onTap: () => Navigator.pushNamed(context, '/settings'),
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              shape: BoxShape.circle,
-              boxShadow: AppTheme.softShadow,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.settings_outlined,
-                color: AppTheme.primaryColor,
-                size: 24,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -139,10 +81,7 @@ class _FocusScreenState extends State<FocusScreen> {
             ),
           ),
           SizedBox(height: AppTheme.spacing10),
-          Text(
-            'Focus Session',
-            style: AppTheme.heading2,
-          ),
+          Text('Focus Session', style: AppTheme.heading2),
         ],
       ),
     );
@@ -186,98 +125,32 @@ class _FocusScreenState extends State<FocusScreen> {
   }
 
   Widget _buildBlockedApps() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Blocked Apps',
-            style: AppTheme.heading2,
-          ),
+          const Text('Blocked Apps', style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing15),
-          ..._apps.map((app) => _buildAppItem(app)),
+          ..._apps.map((app) => LabeledListItem(
+                label: app.name,
+                trailing: ToggleSwitch(
+                  value: app.isBlocked,
+                  onChanged: (value) {
+                    setState(() => app.isBlocked = value);
+                  },
+                ),
+              )),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAppItem(BlockedApp app) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing15),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppTheme.dividerColor,
-            width: AppTheme.borderWidthThin,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            app.name,
-            style: AppTheme.body,
-          ),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                app.isBlocked = !app.isBlocked;
-              });
-            },
-            child: _buildToggleSwitch(app.isBlocked),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleSwitch(bool isActive) {
-    return Container(
-      width: 50,
-      height: 28,
-      decoration: BoxDecoration(
-        color: isActive ? AppTheme.primaryColor : AppTheme.borderColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusCircular),
-      ),
-      child: AnimatedAlign(
-        duration: const Duration(milliseconds: 200),
-        alignment: isActive ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.all(3),
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: AppTheme.softShadow,
-          ),
-        ),
       ),
     );
   }
 
   Widget _buildFocusSessions() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Today\'s Sessions',
-            style: AppTheme.heading2,
-          ),
+          const Text("Today's Sessions", style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing15),
           _buildSessionItem('Morning Focus - 25 min'),
           const SizedBox(height: AppTheme.spacing10),
@@ -299,7 +172,7 @@ class _FocusScreenState extends State<FocusScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.successColor.withOpacity(0.2),
+              color: AppTheme.successColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
             ),
             child: const Icon(
@@ -310,21 +183,10 @@ class _FocusScreenState extends State<FocusScreen> {
           ),
           const SizedBox(width: AppTheme.spacing12),
           Expanded(
-            child: Text(
-              label,
-              style: AppTheme.body,
-            ),
+            child: Text(label, style: AppTheme.body),
           ),
         ],
       ),
     );
   }
 }
-
-class BlockedApp {
-  String name;
-  bool isBlocked;
-
-  BlockedApp({required this.name, required this.isBlocked});
-}
-
