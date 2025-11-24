@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recur - Journal Entry</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: normal;
+        }
+
+        .btn-settings {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #4a9eff;
+            background: transparent;
+            color: #4a9eff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .entry-box {
+            border: 2px solid white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 300px;
+        }
+
+        .entry-box textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+            min-height: 250px;
+            outline: none;
+        }
+
+        .entry-box textarea::placeholder {
+            color: #888;
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 16px;
+            background: #4a9eff;
+            border: 2px solid #4a9eff;
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            border-top: 2px solid white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 15px 10px;
+        }
+
+        .nav-item {
+            background: #2a2a2a;
+            border: 2px solid white;
+            border-radius: 4px;
+            padding: 10px 20px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .nav-item.active {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2d5a2d;
+            border-color: #2d5a2d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>New Journal Entry</h1>
+        <button class="btn-settings" onclick="window.location.href='settings.html'">stgs</button>
+    </div>
+
+    <div class="entry-box">
+        <textarea
+            placeholder="Write your freeform journal entry here... Habits mentioned in your entries (e.g., 'I want to exercise every morning' or 'wash hair every 4 days') will be automatically created and scheduled."></textarea>
+    </div>
+
+    <button class="btn-save">Save Entry</button>
+
+    <div class="nav-bar">
+        <div class="nav-item" onclick="window.location.href='journal-list.html'">journ</div>
+        <div class="nav-item active">j entry</div>
+        <div class="nav-item" onclick="window.location.href='ai-schedule.html'">sched</div>
+    </div>
+</body>
+
+</html>
