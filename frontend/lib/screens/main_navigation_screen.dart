@@ -12,10 +12,7 @@ import 'settings_screen.dart';
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
 
-  const MainNavigationScreen({
-    super.key,
-    this.initialIndex = 1,
-  });
+  const MainNavigationScreen({super.key, this.initialIndex = 1});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -66,30 +63,42 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         switchInCurve: Curves.easeInOut,
         switchOutCurve: Curves.easeInOut,
         transitionBuilder: (Widget child, Animation<double> animation) {
-          // Determine slide direction based on navigation
-          final direction = getSlideDirection(_previousIndex, _currentIndex);
-          
+          // Check if navigating to journal entry (index 2)
+          final isNavigatingToJournalEntry = _currentIndex == 2;
+
           // For incoming page (animation goes 0 -> 1)
           Offset incomingBegin;
           // For outgoing page (animation goes 0 -> 1, but we reverse it)
           Offset outgoingEnd;
-          
-          switch (direction) {
-            case SlideDirection.left:
-              // Moving left: new page comes from right, old page exits to left
-              incomingBegin = const Offset(1.0, 0.0);
-              outgoingEnd = const Offset(-1.0, 0.0);
-              break;
-            case SlideDirection.right:
-              // Moving right: new page comes from left, old page exits to right
-              incomingBegin = const Offset(-1.0, 0.0);
-              outgoingEnd = const Offset(1.0, 0.0);
-              break;
-            case SlideDirection.center:
-              // Shouldn't happen, but fallback to fade
-              incomingBegin = Offset.zero;
-              outgoingEnd = Offset.zero;
-              break;
+
+          if (isNavigatingToJournalEntry) {
+            // Coming TO journal entry: slide up from bottom (vertical)
+            incomingBegin = const Offset(0.0, 1.0);
+            outgoingEnd = const Offset(
+              0.0,
+              -1.0,
+            ); // Other page slides up and out
+          } else {
+            // Regular left/right navigation (including when exiting journal entry)
+            final direction = getSlideDirection(_previousIndex, _currentIndex);
+
+            switch (direction) {
+              case SlideDirection.left:
+                // Moving left: new page comes from right, old page exits to left
+                incomingBegin = const Offset(1.0, 0.0);
+                outgoingEnd = const Offset(-1.0, 0.0);
+                break;
+              case SlideDirection.right:
+                // Moving right: new page comes from left, old page exits to right
+                incomingBegin = const Offset(-1.0, 0.0);
+                outgoingEnd = const Offset(1.0, 0.0);
+                break;
+              case SlideDirection.center:
+                // Shouldn't happen, but fallback to fade
+                incomingBegin = Offset.zero;
+                outgoingEnd = Offset.zero;
+                break;
+            }
           }
 
           // Check if this is the incoming or outgoing child
@@ -98,13 +107,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           if (isIncoming) {
             // Incoming page: animation goes 0→1, slide in from begin to center
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: incomingBegin,
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOut,
-              )),
+              position: Tween<Offset>(begin: incomingBegin, end: Offset.zero)
+                  .animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
               child: child,
             );
           } else {
@@ -113,13 +119,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             // We want it to start at center and move to outgoingEnd
             // So: begin = outgoingEnd, end = Offset.zero
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: outgoingEnd,  // Swapped! Starts here when animation=1
-                end: Offset.zero,    // Swapped! Ends here when animation=0
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOut,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: outgoingEnd, // Swapped! Starts here when animation=1
+                    end: Offset.zero, // Swapped! Ends here when animation=0
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
               child: child,
             );
           }
@@ -145,4 +151,3 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
-

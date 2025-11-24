@@ -17,12 +17,40 @@ class JournalEntryScreen extends StatefulWidget {
   State<JournalEntryScreen> createState() => _JournalEntryScreenState();
 }
 
-class _JournalEntryScreenState extends State<JournalEntryScreen> {
+class _JournalEntryScreenState extends State<JournalEntryScreen>
+    with SingleTickerProviderStateMixin {
   final _entryController = TextEditingController();
+  late AnimationController _scanController;
+  late Animation<double> _scanAnimation;
+  bool _showScanEffect = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scanController = AnimationController(
+      duration: const Duration(milliseconds: 1200), // Faster animation
+      vsync: this,
+    );
+    _scanAnimation = CurvedAnimation(
+      parent: _scanController,
+      curve: Curves.easeOut,
+    );
+    // Hide effect when animation completes
+    _scanController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          _showScanEffect = false;
+        });
+      }
+    });
+    // Start the scan animation when screen opens
+    _scanController.forward();
+  }
 
   @override
   void dispose() {
     _entryController.dispose();
+    _scanController.dispose();
     super.dispose();
   }
 
@@ -66,7 +94,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final body = Container(
+    final content = Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -96,6 +124,57 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
           ),
         ),
       ),
+    );
+
+    final body = Stack(
+      children: [
+        content,
+        // Circular gradient spreading from center button
+        if (_showScanEffect)
+          AnimatedBuilder(
+            animation: _scanAnimation,
+            builder: (context, child) {
+              final screenSize = MediaQuery.of(context).size;
+              final maxRadius =
+                  screenSize.height * 1.2; // Large enough to cover screen
+              final currentRadius = maxRadius * _scanAnimation.value;
+              // Invert opacity: start visible, fade to invisible
+              final opacityMultiplier = 1.0 - _scanAnimation.value;
+              // Button is at bottom center, account for navbar height
+              final buttonY = 0.0; // Bottom of screen
+              final buttonX = screenSize.width / 2; // Center horizontally
+
+              return Positioned(
+                bottom:
+                    buttonY -
+                    currentRadius, // Center the circle at button position
+                left: buttonX - currentRadius,
+                width: currentRadius * 2,
+                height: currentRadius * 2,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        center: Alignment.bottomCenter,
+                        radius: 1.0,
+                        colors: [
+                          Colors.white.withOpacity(1.0 * opacityMultiplier),
+                          Colors.white.withOpacity(0.7 * opacityMultiplier),
+                          AppTheme.primaryColor.withOpacity(
+                            0.5 * opacityMultiplier,
+                          ),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.3, 0.6, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
     );
 
     if (!widget.showNavBar) {
