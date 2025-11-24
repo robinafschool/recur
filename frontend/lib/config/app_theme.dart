@@ -115,7 +115,7 @@ class AppTheme {
 
   static List<BoxShadow> get buttonShadow => [
         BoxShadow(
-          color: primaryColor.withOpacity(0.3),
+          color: primaryColor.withValues(alpha: 0.3),
           blurRadius: 15,
           offset: const Offset(0, 4),
         ),
@@ -131,7 +131,6 @@ class AppTheme {
         primary: primaryColor,
         surface: surfaceColor,
         error: errorColor,
-        background: backgroundColor,
       ),
       textTheme: const TextTheme(
         displayLarge: logo,

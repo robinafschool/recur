@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/bottom_nav_bar.dart';
+import '../widgets/widgets.dart';
 import '../utils/route_generator.dart';
+import '../navigation/navigation.dart';
 import 'analytics_screen.dart';
 import 'journal_list_screen.dart';
 import 'journal_entry_screen.dart';
@@ -38,17 +39,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
-  Widget _getCurrentPage() {
-    switch (_currentIndex) {
-      case 0:
+  Widget _getScreenForIndex(int index) {
+    switch (index) {
+      case NavIndex.analytics:
         return const AnalyticsScreen(showNavBar: false);
-      case 1:
+      case NavIndex.journalList:
         return const JournalListScreen(showNavBar: false);
-      case 2:
+      case NavIndex.journalEntry:
         return const JournalEntryScreen(showNavBar: false);
-      case 3:
+      case NavIndex.aiSchedule:
         return const AiScheduleScreen(showNavBar: false);
-      case 4:
+      case NavIndex.settings:
         return const SettingsScreen(showNavBar: false);
       default:
         return const JournalListScreen(showNavBar: false);
@@ -63,49 +64,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         switchInCurve: Curves.easeInOut,
         switchOutCurve: Curves.easeInOut,
         transitionBuilder: (Widget child, Animation<double> animation) {
-          // Check if navigating to journal entry (index 2)
-          final isNavigatingToJournalEntry = _currentIndex == 2;
+          final isNavigatingToJournalEntry = _currentIndex == NavIndex.journalEntry;
 
-          // For incoming page (animation goes 0 -> 1)
           Offset incomingBegin;
-          // For outgoing page (animation goes 0 -> 1, but we reverse it)
           Offset outgoingEnd;
 
           if (isNavigatingToJournalEntry) {
-            // Coming TO journal entry: slide up from bottom (vertical)
             incomingBegin = const Offset(0.0, 1.0);
-            outgoingEnd = const Offset(
-              0.0,
-              -1.0,
-            ); // Other page slides up and out
+            outgoingEnd = const Offset(0.0, -1.0);
           } else {
-            // Regular left/right navigation (including when exiting journal entry)
             final direction = getSlideDirection(_previousIndex, _currentIndex);
 
             switch (direction) {
               case SlideDirection.left:
-                // Moving left: new page comes from right, old page exits to left
                 incomingBegin = const Offset(1.0, 0.0);
                 outgoingEnd = const Offset(-1.0, 0.0);
                 break;
               case SlideDirection.right:
-                // Moving right: new page comes from left, old page exits to right
                 incomingBegin = const Offset(-1.0, 0.0);
                 outgoingEnd = const Offset(1.0, 0.0);
                 break;
               case SlideDirection.center:
-                // Shouldn't happen, but fallback to fade
                 incomingBegin = Offset.zero;
                 outgoingEnd = Offset.zero;
                 break;
             }
           }
 
-          // Check if this is the incoming or outgoing child
           final isIncoming = child.key == ValueKey<int>(_currentIndex);
 
           if (isIncoming) {
-            // Incoming page: animation goes 0→1, slide in from begin to center
             return SlideTransition(
               position: Tween<Offset>(begin: incomingBegin, end: Offset.zero)
                   .animate(
@@ -114,24 +102,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               child: child,
             );
           } else {
-            // Outgoing page: AnimatedSwitcher reverses animation (1→0)
-            // So we need to SWAP begin/end: it starts at "end" and moves to "begin"
-            // We want it to start at center and move to outgoingEnd
-            // So: begin = outgoingEnd, end = Offset.zero
             return SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: outgoingEnd, // Swapped! Starts here when animation=1
-                    end: Offset.zero, // Swapped! Ends here when animation=0
-                  ).animate(
-                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                  ),
+              position: Tween<Offset>(
+                begin: outgoingEnd,
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+              ),
               child: child,
             );
           }
         },
         layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-          // Stack the pages so they slide over each other
           return Stack(
             children: <Widget>[
               ...previousChildren,
@@ -141,7 +123,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         },
         child: Container(
           key: ValueKey<int>(_currentIndex),
-          child: _getCurrentPage(),
+          child: _getScreenForIndex(_currentIndex),
         ),
       ),
       bottomNavigationBar: BottomNavBar(

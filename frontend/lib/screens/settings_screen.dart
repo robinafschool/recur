@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../utils/route_generator.dart';
-import '../widgets/gradient_header.dart';
-import 'analytics_screen.dart';
-import 'journal_list_screen.dart';
-import 'journal_entry_screen.dart';
-import 'ai_schedule_screen.dart';
+import '../widgets/widgets.dart';
+import '../navigation/navigation.dart';
+import '../models/models.dart';
 
 class SettingsScreen extends StatefulWidget {
   final bool showNavBar;
@@ -21,109 +17,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _habitReminders = true;
   bool _journalPrompts = true;
   bool _aiSuggestions = false;
-  static const int _currentIndex = 4; // Settings is rightmost item
 
   void _navigateToScreen(int index) {
-    if (index == _currentIndex)
-      return; // Don't navigate if already on this screen
-
-    final routes = [
-      '/analytics',
-      '/journal-list',
-      '/journal-entry',
-      '/ai-schedule',
-      '/settings',
-    ];
-    final direction = getSlideDirection(_currentIndex, index);
-
-    Navigator.pushReplacement(
-      context,
-      SlideRoute(page: _getRouteWidget(routes[index]), direction: direction),
-    );
-  }
-
-  Widget _getRouteWidget(String route) {
-    switch (route) {
-      case '/analytics':
-        return const AnalyticsScreen();
-      case '/journal-list':
-        return const JournalListScreen();
-      case '/journal-entry':
-        return const JournalEntryScreen();
-      case '/ai-schedule':
-        return const AiScheduleScreen();
-      case '/settings':
-        return const SettingsScreen();
-      default:
-        return const SettingsScreen();
-    }
+    AppNavigator.navigateToIndex(context, NavIndex.settings, index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final body = Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.7),
-            AppTheme.primaryLight.withOpacity(0.5),
+    return GradientScaffold(
+      bottomNavigationBar: widget.showNavBar
+          ? BottomNavBar(
+              currentIndex: NavIndex.settings,
+              onTap: _navigateToScreen,
+            )
+          : null,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.spacing20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const GradientHeader(
+              icon: Icons.settings_outlined,
+              title: 'Settings',
+              description:
+                  'Manage your account, preferences, and app settings.',
+            ),
+            const SizedBox(height: AppTheme.spacing30),
+            _buildAccountInfo(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildNotificationSettings(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildPrivacySettings(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildAppearanceSettings(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildAboutSettings(),
+            const SizedBox(height: AppTheme.spacing20),
+            _buildLogoutButton(),
           ],
         ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacing20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const GradientHeader(
-                icon: Icons.settings_outlined,
-                title: 'Settings',
-                description:
-                    'Manage your account, preferences, and app settings.',
-              ),
-              const SizedBox(height: AppTheme.spacing30),
-              _buildAccountInfo(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildNotificationSettings(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildPrivacySettings(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildAppearanceSettings(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildAboutSettings(),
-              const SizedBox(height: AppTheme.spacing20),
-              _buildLogoutButton(),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (!widget.showNavBar) {
-      return body;
-    }
-
-    return Scaffold(
-      body: body,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _navigateToScreen,
       ),
     );
   }
 
   Widget _buildAccountInfo() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Row(
         children: [
           Container(
@@ -177,27 +115,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       items: [
         SettingItem(
           label: 'Habit Reminders',
-          trailing: _buildToggleSwitch(_habitReminders, (value) {
-            setState(() {
-              _habitReminders = value;
-            });
-          }),
+          trailing: ToggleSwitch(
+            value: _habitReminders,
+            onChanged: (value) => setState(() => _habitReminders = value),
+          ),
         ),
         SettingItem(
           label: 'Journal Prompts',
-          trailing: _buildToggleSwitch(_journalPrompts, (value) {
-            setState(() {
-              _journalPrompts = value;
-            });
-          }),
+          trailing: ToggleSwitch(
+            value: _journalPrompts,
+            onChanged: (value) => setState(() => _journalPrompts = value),
+          ),
         ),
         SettingItem(
           label: 'AI Suggestions',
-          trailing: _buildToggleSwitch(_aiSuggestions, (value) {
-            setState(() {
-              _aiSuggestions = value;
-            });
-          }),
+          trailing: ToggleSwitch(
+            value: _aiSuggestions,
+            onChanged: (value) => setState(() => _aiSuggestions = value),
+          ),
         ),
       ],
     );
@@ -276,13 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     required List<SettingItem> items,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -293,30 +222,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final item = entry.value;
             final isLast = index == items.length - 1;
 
-            return GestureDetector(
+            return LabeledListItem(
+              label: item.label,
+              trailing: item.trailing,
+              showBottomBorder: !isLast,
               onTap: item.onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppTheme.spacing15,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isLast
-                          ? Colors.transparent
-                          : AppTheme.dividerColor,
-                      width: AppTheme.borderWidthThin,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(item.label, style: AppTheme.body),
-                    item.trailing,
-                  ],
-                ),
-              ),
             );
           }),
         ],
@@ -324,39 +234,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildToggleSwitch(bool isActive, Function(bool) onChanged) {
-    return GestureDetector(
-      onTap: () => onChanged(!isActive),
-      child: Container(
-        width: 50,
-        height: 28,
-        decoration: BoxDecoration(
-          color: isActive ? AppTheme.primaryColor : AppTheme.borderColor,
-          borderRadius: BorderRadius.circular(AppTheme.radiusCircular),
-        ),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
-          alignment: isActive ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.all(3),
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: AppTheme.softShadow,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildLogoutButton() {
     return OutlinedButton(
       onPressed: () {
-        // Handle logout
-        Navigator.pushReplacementNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
       },
       style: OutlinedButton.styleFrom(
         side: const BorderSide(
@@ -368,12 +249,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: const Text('Sign Out'),
     );
   }
-}
-
-class SettingItem {
-  final String label;
-  final Widget trailing;
-  final VoidCallback? onTap;
-
-  SettingItem({required this.label, required this.trailing, this.onTap});
 }

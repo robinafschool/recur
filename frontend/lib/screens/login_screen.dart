@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
+import '../widgets/widgets.dart';
+import '../navigation/navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +21,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _handleSignIn() {
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,17 +38,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Spacer(),
-                  const Text(
-                    'Recur',
-                    style: AppTheme.logo,
-                  ),
+                  const Text('Recur', style: AppTheme.logo),
                   const SizedBox(height: AppTheme.spacing60),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-                      boxShadow: AppTheme.cardShadow,
-                    ),
+                  AppCard(
                     padding: const EdgeInsets.all(AppTheme.spacing30),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -70,25 +68,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: AppTheme.spacing20),
                         ElevatedButton(
-                          onPressed: () {
-                            // Navigate to habits screen after login
-                            Navigator.pushReplacementNamed(context, '/home');
-                          },
+                          onPressed: _handleSignIn,
                           child: const Text('Sign In'),
                         ),
                         const SizedBox(height: AppTheme.spacing20),
                         const Center(
-                          child: Text(
-                            'or',
-                            style: AppTheme.bodySecondary,
-                          ),
+                          child: Text('or', style: AppTheme.bodySecondary),
                         ),
                         const SizedBox(height: AppTheme.spacing20),
                         OutlinedButton(
-                          onPressed: () {
-                            // Handle Google sign in
-                            Navigator.pushReplacementNamed(context, '/home');
-                          },
+                          onPressed: _handleSignIn,
                           child: const Text('Sign in with Google'),
                         ),
                       ],
@@ -117,4 +106,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
