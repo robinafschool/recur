@@ -4,14 +4,14 @@ import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSignIn() async {
+  Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -34,9 +34,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
+      final response = await Supabase.instance.client.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        emailRedirectTo: null, // No email verification
       );
 
       if (response.user != null) {
@@ -47,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to sign in. Please try again.'),
+              content: Text('Failed to create account. Please try again.'),
               backgroundColor: AppTheme.errorColor,
             ),
           );
@@ -55,13 +56,15 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        String errorMessage = 'Failed to sign in. ';
+        String errorMessage = 'Failed to create account. ';
         if (e.toString().contains('Operation not permitted') ||
             e.toString().contains('SocketConnection failed')) {
           errorMessage +=
               'Network permission denied. Please check your network settings and try again.';
         } else if (e.toString().contains('Invalid login credentials')) {
           errorMessage += 'Invalid email or password.';
+        } else if (e.toString().contains('User already registered')) {
+          errorMessage += 'An account with this email already exists.';
         } else {
           errorMessage += e
               .toString()
@@ -86,8 +89,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _handleSignUpRedirect() {
-    Navigator.pushReplacementNamed(context, AppRoutes.signup);
+  void _handleLoginRedirect() {
+    Navigator.pushReplacementNamed(context, AppRoutes.login);
   }
 
   @override
@@ -147,12 +150,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your password';
                               }
+                              if (value.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
                               return null;
                             },
                           ),
                           const SizedBox(height: AppTheme.spacing20),
                           ElevatedButton(
-                            onPressed: _isLoading ? null : _handleSignIn,
+                            onPressed: _isLoading ? null : _handleSignUp,
                             child: _isLoading
                                 ? const SizedBox(
                                     height: 20,
@@ -164,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   )
-                                : const Text('Sign In'),
+                                : const Text('Sign Up'),
                           ),
                         ],
                       ),
@@ -174,10 +180,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   GestureDetector(
                     onTap: () {
                       // Navigate to sign up
-                      _handleSignUpRedirect();
+                      _handleLoginRedirect();
                     },
                     child: const Text(
-                      'Don\'t have an account? Sign up',
+                      'Already have an account? Log in',
                       style: TextStyle(
                         color: AppTheme.primaryColor,
                         decoration: TextDecoration.underline,

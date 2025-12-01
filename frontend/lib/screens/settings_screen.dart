@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
@@ -61,6 +62,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAccountInfo() {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    // Get user's email
+    final email = user?.email ?? 'Not signed in';
+
+    // Get user's name from metadata or email
+    String displayName = 'User';
+    String initials = 'U';
+
+    if (user != null) {
+      // Try to get name from user metadata
+      final metadata = user.userMetadata;
+      if (metadata != null) {
+        displayName =
+            metadata['full_name'] as String? ??
+            metadata['name'] as String? ??
+            email.split('@').first;
+      } else {
+        displayName = email.split('@').first;
+      }
+
+      // Generate initials from display name
+      final nameParts = displayName.split(' ');
+      if (nameParts.length >= 2) {
+        initials = '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();
+      } else if (displayName.isNotEmpty) {
+        initials = displayName.substring(0, 1).toUpperCase();
+      }
+    }
+
     return AppCard(
       child: Row(
         children: [
@@ -75,10 +106,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 end: Alignment.bottomRight,
               ),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                'JD',
-                style: TextStyle(
+                initials,
+                style: const TextStyle(
                   fontSize: AppTheme.fontSizeHuge,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -87,20 +118,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(width: AppTheme.spacing15),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'John Doe',
-                  style: TextStyle(
+                  displayName,
+                  style: const TextStyle(
                     fontSize: AppTheme.fontSizeXLarge,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary,
                   ),
                 ),
-                SizedBox(height: 5),
-                Text('john.doe@example.com', style: AppTheme.bodySecondary),
+                const SizedBox(height: 5),
+                Text(email, style: AppTheme.bodySecondary),
+                if (user != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'User ID: ${user.id.substring(0, 8)}...',
+                    style: AppTheme.caption,
+                  ),
+                ],
               ],
             ),
           ),
@@ -236,8 +274,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildLogoutButton() {
     return OutlinedButton(
-      onPressed: () {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      onPressed: () async {
+        // Show confirmation dialog
+        final shouldLogout = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Sign Out'),
+            content: const Text('Are you sure you want to sign out?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.errorColor,
+                ),
+                child: const Text('Sign Out'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldLogout == true && mounted) {
+          try {
+            await Supabase.instance.client.auth.signOut();
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error signing out: ${e.toString()}'),
+                  backgroundColor: AppTheme.errorColor,
+                ),
+              );
+            }
+          }
+        }
       },
       style: OutlinedButton.styleFrom(
         side: const BorderSide(

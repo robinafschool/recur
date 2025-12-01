@@ -17,6 +17,7 @@ class AppRoutes {
   AppRoutes._();
 
   static const String login = '/login';
+  static const String signup = '/signup';
   static const String home = '/home';
   static const String analytics = '/analytics';
   static const String journalList = '/journal-list';
@@ -58,10 +59,7 @@ class AppNavigator {
 
     Navigator.pushReplacement(
       context,
-      SlideRoute(
-        page: screenBuilder(targetIndex),
-        direction: direction,
-      ),
+      SlideRoute(page: screenBuilder(targetIndex), direction: direction),
     );
   }
 
