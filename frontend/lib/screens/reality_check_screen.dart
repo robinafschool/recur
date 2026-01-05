@@ -55,48 +55,6 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
     final nameController = TextEditingController();
     final intervalController = TextEditingController();
     final eventController = TextEditingController();
-    List<String> aiSuggestions = [];
-
-    // Load AI suggestions for event-based reality checks
-    Future<void> loadAISuggestions() async {
-      try {
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user == null) return;
-
-        // Get recent dreams
-        final dreamsResponse = await Supabase.instance.client
-            .from('journal_entries')
-            .select('content')
-            .eq('user_id', user.id)
-            .order('created_at', ascending: false)
-            .limit(10);
-
-        if (dreamsResponse.isEmpty) return;
-
-        // Simple extraction of common entities (in production, use AI)
-        final allContent = (dreamsResponse as List)
-            .map((e) => e['content'] as String? ?? '')
-            .join(' ')
-            .toLowerCase();
-
-        // Extract potential triggers (simple keyword matching)
-        final triggers = <String>[];
-        final commonWords = ['pet', 'dog', 'cat', 'friend', 'school', 'office', 'work', 'home', 'car', 'phone'];
-        for (final word in commonWords) {
-          if (allContent.contains(word)) {
-            triggers.add('when you see: $word');
-          }
-        }
-
-        setState(() {
-          aiSuggestions = triggers.take(5).toList();
-        });
-      } catch (e) {
-        debugPrint('Error loading AI suggestions: $e');
-      }
-    }
-
-    await loadAISuggestions();
 
     if (!mounted) return;
 
@@ -144,35 +102,6 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
                 ],
                 if (selectedType == 'event') ...[
                   const SizedBox(height: AppTheme.spacing20),
-                  if (aiSuggestions.isNotEmpty) ...[
-                    const Text(
-                      'AI Suggestions:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: AppTheme.spacing10),
-                    ...aiSuggestions.map((suggestion) => InkWell(
-                          onTap: () {
-                            eventController.text = suggestion.replaceFirst('when you see: ', '');
-                            setDialogState(() {});
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(AppTheme.spacing10),
-                            margin: const EdgeInsets.only(bottom: AppTheme.spacing8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.auto_awesome, size: 16, color: AppTheme.primaryColor),
-                                const SizedBox(width: AppTheme.spacing8),
-                                Expanded(child: Text(suggestion, style: AppTheme.body)),
-                              ],
-                            ),
-                          ),
-                        )),
-                    const SizedBox(height: AppTheme.spacing10),
-                  ],
                   TextField(
                     controller: eventController,
                     decoration: const InputDecoration(

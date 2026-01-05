@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 
 /// Reusable scaffold with gradient background used across multiple screens
+/// The gradient always fills the entire screen, even when content is minimal
 class GradientScaffold extends StatelessWidget {
   final Widget child;
   final Widget? bottomNavigationBar;
@@ -14,7 +15,9 @@ class GradientScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final body = Container(
+    final gradientContainer = Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -26,15 +29,17 @@ class GradientScaffold extends StatelessWidget {
           ],
         ),
       ),
-      child: SafeArea(child: child),
+      child: SafeArea(
+        child: child,
+      ),
     );
 
     if (bottomNavigationBar == null) {
-      return body;
+      return gradientContainer;
     }
 
     return Scaffold(
-      body: body,
+      body: gradientContainer,
       bottomNavigationBar: bottomNavigationBar,
     );
   }

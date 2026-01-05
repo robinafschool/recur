@@ -16,20 +16,22 @@ class JournalEntryScreen extends StatefulWidget {
 
 class _JournalEntryScreenState extends State<JournalEntryScreen>
     with TickerProviderStateMixin {
-  final List<TextEditingController> _dreamControllers = [TextEditingController()];
+  final List<TextEditingController> _dreamControllers = [
+    TextEditingController(),
+  ];
   final List<GlobalKey> _textFieldKeys = [GlobalKey()];
+  final List<String> _previousTexts = [''];
   late AnimationController _scanController;
   late Animation<double> _scanAnimation;
   bool _showScanEffect = true;
   final List<_Particle> _particles = [];
-  String _previousText = '';
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _initScanAnimation();
-    _dreamControllers[0].addListener(_onTextChanged);
+    _dreamControllers[0].addListener(() => _onTextChanged(0));
   }
 
   void _initScanAnimation() {
@@ -49,25 +51,28 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
     _scanController.forward();
   }
 
-  void _onTextChanged() {
-    final currentText = _dreamControllers[0].text;
-    if (currentText.length > _previousText.length) {
-      final newChar = currentText.substring(_previousText.length);
+  void _onTextChanged(int index) {
+    final currentText = _dreamControllers[index].text;
+    final previousText = _previousTexts[index];
+    if (currentText.length > previousText.length) {
+      final newChar = currentText.substring(previousText.length);
       if (newChar.isNotEmpty) {
-        _createParticle(newChar);
+        _createParticle(newChar, index);
       }
     }
-    _previousText = currentText;
+    _previousTexts[index] = currentText;
   }
 
-  void _createParticle(String character) {
+  void _createParticle(String character, int dreamIndex) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Offset? cursorPosition;
 
-      if (_textFieldKeys[0].currentContext != null) {
+      if (dreamIndex < _textFieldKeys.length &&
+          _textFieldKeys[dreamIndex].currentContext != null) {
         RenderEditable? renderEditable;
         RenderBox? containerRenderBox =
-            _textFieldKeys[0].currentContext!.findRenderObject() as RenderBox?;
+            _textFieldKeys[dreamIndex].currentContext!.findRenderObject()
+                as RenderBox?;
 
         if (containerRenderBox != null) {
           void findRenderEditable(RenderObject? obj) {
@@ -84,8 +89,8 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
           findRenderEditable(containerRenderBox);
         }
 
-        if (renderEditable != null) {
-          final selection = _dreamControllers[0].selection;
+        if (renderEditable != null && dreamIndex < _dreamControllers.length) {
+          final selection = _dreamControllers[dreamIndex].selection;
           final textPosition = TextPosition(offset: selection.baseOffset);
           final caretRect = renderEditable!.getLocalRectForCaret(textPosition);
 
@@ -116,8 +121,11 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
   void _addDream() {
     setState(() {
       final controller = TextEditingController();
+      final index = _dreamControllers.length;
       _dreamControllers.add(controller);
       _textFieldKeys.add(GlobalKey());
+      _previousTexts.add('');
+      controller.addListener(() => _onTextChanged(index));
     });
   }
 
@@ -127,6 +135,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
       _dreamControllers[index].dispose();
       _dreamControllers.removeAt(index);
       _textFieldKeys.removeAt(index);
+      _previousTexts.removeAt(index);
     });
   }
 
@@ -157,7 +166,11 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
           'user_id': user.id,
           'content': nonEmptyDreams[i],
           'date': date.toIso8601String().split('T')[0],
-          'time': now.add(Duration(seconds: i)).toIso8601String().split('T')[1].split('.')[0],
+          'time': now
+              .add(Duration(seconds: i))
+              .toIso8601String()
+              .split('T')[1]
+              .split('.')[0],
           'metadata': {'dream_index': i, 'dream_order': i + 1},
         });
       }
@@ -165,14 +178,18 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved ${nonEmptyDreams.length} dream${nonEmptyDreams.length > 1 ? 's' : ''}')),
+          SnackBar(
+            content: Text(
+              'Saved ${nonEmptyDreams.length} dream${nonEmptyDreams.length > 1 ? 's' : ''}',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving dreams: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving dreams: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -207,7 +224,6 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
 
   @override
   void dispose() {
-    _dreamControllers[0].removeListener(_onTextChanged);
     for (var controller in _dreamControllers) {
       controller.dispose();
     }
@@ -242,19 +258,30 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ...List.generate(_dreamControllers.length, (index) => _buildDreamBox(index)),
+                    ...List.generate(
+                      _dreamControllers.length,
+                      (index) => _buildDreamBox(index),
+                    ),
                     const SizedBox(height: AppTheme.spacing20),
                     OutlinedButton.icon(
                       onPressed: _addDream,
                       icon: const Icon(Icons.add),
                       label: const Text('Add Dream'),
                     ),
-                    if (_dreamControllers.any((c) => c.text.trim().isNotEmpty)) ...[
+                    if (_dreamControllers.any(
+                      (c) => c.text.trim().isNotEmpty,
+                    )) ...[
                       const SizedBox(height: AppTheme.spacing20),
                       ElevatedButton(
                         onPressed: _isSaving ? null : _saveDreams,
                         child: _isSaving
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : const Text('Save Dreams'),
                       ),
                     ],
@@ -314,7 +341,9 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
                   colors: [
                     Colors.white.withValues(alpha: 1.0 * opacityMultiplier),
                     Colors.white.withValues(alpha: 0.7 * opacityMultiplier),
-                    AppTheme.primaryColor.withValues(alpha: 0.5 * opacityMultiplier),
+                    AppTheme.primaryColor.withValues(
+                      alpha: 0.5 * opacityMultiplier,
+                    ),
                     Colors.transparent,
                   ],
                   stops: const [0.0, 0.3, 0.6, 1.0],
@@ -388,21 +417,21 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_dreamControllers.length > 1) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        SizedBox(
+          height: 48, // Reserve space for close button
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text('Dream ${index + 1}', style: AppTheme.heading2),
               if (canRemove)
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
                   onPressed: () => _removeDream(index),
                   color: AppTheme.textTertiary,
+                  tooltip: 'Remove dream',
                 ),
             ],
           ),
-          const SizedBox(height: AppTheme.spacing10),
-        ],
+        ),
         Container(
           key: _textFieldKeys[index],
           constraints: const BoxConstraints(minHeight: 200),
@@ -429,7 +458,10 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
                 height: 1.5,
               ),
             ),
-            style: AppTheme.body.copyWith(color: AppTheme.textPrimary, height: 1.5),
+            style: AppTheme.body.copyWith(
+              color: AppTheme.textPrimary,
+              height: 1.5,
+            ),
             maxLines: null,
             textAlignVertical: TextAlignVertical.top,
           ),

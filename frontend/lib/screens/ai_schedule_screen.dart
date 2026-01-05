@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
+import '../models/models.dart';
 
 class AiScheduleScreen extends StatefulWidget {
   final bool showNavBar;
@@ -14,79 +15,201 @@ class AiScheduleScreen extends StatefulWidget {
 }
 
 class _AiScheduleScreenState extends State<AiScheduleScreen> {
-  List<Map<String, String>> _eventSuggestions = [];
-  bool _isLoadingSuggestions = false;
+  List<RealityCheck> _realityChecks = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadEventSuggestions();
+    _loadRealityChecks();
   }
 
-  Future<void> _loadEventSuggestions() async {
-    setState(() => _isLoadingSuggestions = true);
+  Future<void> _loadRealityChecks() async {
+    setState(() => _isLoading = true);
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      // Get recent dreams
-      final dreamsResponse = await Supabase.instance.client
-          .from('journal_entries')
-          .select('content')
+      final response = await Supabase.instance.client
+          .from('reality_checks')
+          .select()
           .eq('user_id', user.id)
-          .order('created_at', ascending: false)
-          .limit(20);
-
-      if (dreamsResponse.isEmpty) {
-        setState(() {
-          _eventSuggestions = [];
-          _isLoadingSuggestions = false;
-        });
-        return;
-      }
-
-      // Simple extraction of common entities (in production, use AI/LLM)
-      final allContent = (dreamsResponse as List)
-          .map((e) => e['content'] as String? ?? '')
-          .join(' ')
-          .toLowerCase();
-
-      // Extract potential triggers (simple keyword matching)
-      final suggestions = <Map<String, String>>[];
-      final commonPatterns = [
-        {'word': 'pet', 'trigger': 'when you see your pet'},
-        {'word': 'dog', 'trigger': 'when you see a dog'},
-        {'word': 'cat', 'trigger': 'when you see a cat'},
-        {'word': 'friend', 'trigger': 'when you see a friend'},
-        {'word': 'school', 'trigger': 'when you see your school'},
-        {'word': 'office', 'trigger': 'when you see your office'},
-        {'word': 'work', 'trigger': 'when you see your workplace'},
-        {'word': 'home', 'trigger': 'when you see your home'},
-        {'word': 'car', 'trigger': 'when you see a car'},
-        {'word': 'phone', 'trigger': 'when you see your phone'},
-      ];
-
-      for (final pattern in commonPatterns) {
-        if (allContent.contains(pattern['word']!)) {
-          suggestions.add({
-            'trigger': pattern['trigger']!,
-            'reason': 'Based on: Your recent dreams frequently mention ${pattern['word']}',
-          });
-        }
-      }
+          .order('created_at', ascending: false);
 
       setState(() {
-        _eventSuggestions = suggestions.take(5).toList();
-        _isLoadingSuggestions = false;
+        _realityChecks = (response as List)
+            .map((json) => RealityCheck.fromJson(json))
+            .toList();
+        _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading event suggestions: $e');
-      setState(() => _isLoadingSuggestions = false);
+      debugPrint('Error loading reality checks: $e');
+      setState(() => _isLoading = false);
     }
   }
 
   void _navigateToScreen(int index) {
     AppNavigator.navigateToIndex(context, NavIndex.aiSchedule, index);
+  }
+
+  Future<void> _editRealityCheck(RealityCheck rc) async {
+    final nameController = TextEditingController(text: rc.name);
+    final intervalController = TextEditingController(
+      text: rc.type == 'interval' ? rc.intervalMinutes.toString() : '',
+    );
+    final eventController = TextEditingController(
+      text: rc.type == 'event' ? (rc.eventDescription ?? '') : '',
+    );
+    String? selectedType = rc.type;
+
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Reality Check'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    hintText: 'e.g., Check hands, Count fingers',
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing20),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: const InputDecoration(
+                    labelText: 'Type',
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'interval', child: Text('Interval')),
+                    DropdownMenuItem(value: 'event', child: Text('Event-based')),
+                  ],
+                  onChanged: (value) {
+                    setDialogState(() => selectedType = value);
+                  },
+                ),
+                if (selectedType == 'interval') ...[
+                  const SizedBox(height: AppTheme.spacing20),
+                  TextField(
+                    controller: intervalController,
+                    decoration: const InputDecoration(
+                      labelText: 'Interval (minutes)',
+                      hintText: 'e.g., 120 for every 2 hours',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+                if (selectedType == 'event') ...[
+                  const SizedBox(height: AppTheme.spacing20),
+                  TextField(
+                    controller: eventController,
+                    decoration: const InputDecoration(
+                      labelText: 'Event Description',
+                      hintText: 'e.g., when you see your pet',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isEmpty || selectedType == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill in all required fields')),
+                  );
+                  return;
+                }
+
+                if (selectedType == 'interval' && intervalController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter interval minutes')),
+                  );
+                  return;
+                }
+
+                if (selectedType == 'event' && eventController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter event description')),
+                  );
+                  return;
+                }
+
+                await _updateRealityCheck(
+                  rc: rc,
+                  name: nameController.text,
+                  type: selectedType!,
+                  intervalMinutes: selectedType == 'interval'
+                      ? int.tryParse(intervalController.text)
+                      : null,
+                  eventDescription: selectedType == 'event' ? eventController.text : null,
+                );
+
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updateRealityCheck({
+    required RealityCheck rc,
+    required String name,
+    required String type,
+    int? intervalMinutes,
+    String? eventDescription,
+  }) async {
+    try {
+      await Supabase.instance.client
+          .from('reality_checks')
+          .update({
+            'name': name,
+            'type': type,
+            'interval_minutes': intervalMinutes,
+            'event_description': eventDescription,
+          })
+          .eq('id', rc.id);
+
+      await _loadRealityChecks();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating reality check: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleActive(RealityCheck realityCheck) async {
+    try {
+      await Supabase.instance.client
+          .from('reality_checks')
+          .update({'is_active': !realityCheck.isActive})
+          .eq('id', realityCheck.id);
+
+      await _loadRealityChecks();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating reality check: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -104,82 +227,49 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const GradientHeader(
-              icon: Icons.auto_awesome,
-              title: 'AI Dream Insights',
+              icon: Icons.schedule,
+              title: 'Reality Check Schedule',
               description:
-                  'AI analyzes your dreams to suggest reality check triggers that can help you achieve lucid dreams.',
+                  'Manage your reality checks and their schedules. Edit, enable, or disable them as needed.',
             ),
             const SizedBox(height: AppTheme.spacing30),
-            _buildAiInfo(),
-            const SizedBox(height: AppTheme.spacing20),
-            _buildEventSuggestions(),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildRealityChecksList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAiInfo() {
-    return AppCard(
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppTheme.spacing12),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
-              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-            ),
-            child: const Icon(
-              Icons.auto_awesome,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: AppTheme.spacing15),
-          const Expanded(
-            child: Text(
-              'AI analyzes your dream patterns to suggest personalized reality check triggers. These help you recognize when you\'re dreaming.',
-              style: TextStyle(
-                fontSize: AppTheme.fontSizeMedium,
-                color: AppTheme.textPrimary,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventSuggestions() {
-    if (_isLoadingSuggestions) {
-      return const AppCard(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(AppTheme.spacing30),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-      );
-    }
-
-    if (_eventSuggestions.isEmpty) {
+  Widget _buildRealityChecksList() {
+    if (_realityChecks.isEmpty) {
       return AppCard(
-        child: Column(
-          children: [
-            Icon(Icons.nightlight_round, size: 48, color: AppTheme.textTertiary),
-            const SizedBox(height: AppTheme.spacing15),
-            Text(
-              'No suggestions yet',
-              style: AppTheme.heading2,
-            ),
-            const SizedBox(height: AppTheme.spacing10),
-            Text(
-              'Record more dreams to get personalized reality check suggestions',
-              style: AppTheme.caption,
-              textAlign: TextAlign.center,
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing60),
+          child: Column(
+            children: [
+              Icon(Icons.check_circle_outline, size: 48, color: AppTheme.textTertiary),
+              const SizedBox(height: AppTheme.spacing15),
+              Text(
+                'No reality checks yet',
+                style: AppTheme.heading2,
+              ),
+              const SizedBox(height: AppTheme.spacing10),
+              Text(
+                'Create reality checks in the Reality Checks screen to manage them here',
+                style: AppTheme.caption,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppTheme.spacing20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.habits);
+                },
+                child: const Text('Go to Reality Checks'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -188,25 +278,19 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Suggested Reality Check Triggers", style: AppTheme.heading2),
-              TextButton.icon(
-                onPressed: _loadEventSuggestions,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Refresh'),
-              ),
-            ],
-          ),
+          const Text('Your Reality Checks', style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing15),
-          ..._eventSuggestions.map((suggestion) => _buildSuggestionItem(suggestion)),
+          ..._realityChecks.map((rc) => _buildRealityCheckItem(rc)),
         ],
       ),
     );
   }
 
-  Widget _buildSuggestionItem(Map<String, String> suggestion) {
+  Widget _buildRealityCheckItem(RealityCheck rc) {
+    final scheduleText = rc.type == 'interval'
+        ? 'Every ${rc.intervalMinutes} minutes'
+        : 'When you see: ${rc.eventDescription}';
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spacing15),
       padding: const EdgeInsets.all(AppTheme.spacing15),
@@ -214,52 +298,72 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
         color: AppTheme.backgroundColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
         border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.3),
-          width: 1,
+          color: rc.isActive ? AppTheme.primaryColor : AppTheme.dividerColor,
+          width: rc.isActive ? 2 : 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.auto_awesome, size: 20, color: AppTheme.primaryColor),
-              const SizedBox(width: AppTheme.spacing8),
               Expanded(
-                child: Text(
-                  suggestion['trigger']!,
-                  style: const TextStyle(
-                    fontSize: AppTheme.fontSizeMedium,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      rc.name,
+                      style: AppTheme.heading2,
+                    ),
+                    const SizedBox(height: AppTheme.spacing8),
+                    Row(
+                      children: [
+                        TagChip(
+                          label: rc.type == 'interval' ? 'Interval' : 'Event',
+                          backgroundColor: rc.type == 'interval'
+                              ? AppTheme.primaryColor.withValues(alpha: 0.2)
+                              : AppTheme.successColor.withValues(alpha: 0.2),
+                          textColor: rc.type == 'interval'
+                              ? AppTheme.primaryColor
+                              : AppTheme.successColor,
+                        ),
+                        const SizedBox(width: AppTheme.spacing8),
+                        if (!rc.isActive)
+                          TagChip(
+                            label: 'Inactive',
+                            backgroundColor: AppTheme.textTertiary.withValues(alpha: 0.2),
+                            textColor: AppTheme.textTertiary,
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
+              ),
+              IconButton(
+                icon: Icon(
+                  rc.isActive ? Icons.toggle_on : Icons.toggle_off,
+                  color: rc.isActive ? AppTheme.primaryColor : AppTheme.textTertiary,
+                  size: 32,
+                ),
+                onPressed: () => _toggleActive(rc),
               ),
             ],
           ),
           const SizedBox(height: AppTheme.spacing10),
           Text(
-            suggestion['reason']!,
-            style: const TextStyle(
-              fontSize: AppTheme.fontSizeSmall,
-              color: AppTheme.textSecondary,
-              fontStyle: FontStyle.italic,
-            ),
+            scheduleText,
+            style: AppTheme.bodySecondary,
           ),
           const SizedBox(height: AppTheme.spacing10),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.habits,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppTheme.spacing8,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => _editRealityCheck(rc),
+                child: const Text('Edit'),
               ),
-            ),
-            child: const Text('Create Reality Check'),
+            ],
           ),
         ],
       ),

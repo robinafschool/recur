@@ -137,9 +137,9 @@ class _JournalListScreenState extends State<JournalListScreen> {
     final groupedDreams = _groupDreamsByDate();
 
     if (groupedDreams.isEmpty) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing60),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.nightlight_round, size: 64, color: AppTheme.textTertiary),
             const SizedBox(height: AppTheme.spacing20),

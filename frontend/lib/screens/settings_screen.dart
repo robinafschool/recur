@@ -17,7 +17,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _realityCheckReminders = true;
   bool _dreamPrompts = true;
-  bool _aiSuggestions = false;
 
   void _navigateToScreen(int index) {
     AppNavigator.navigateToIndex(context, NavIndex.settings, index);
@@ -164,13 +163,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           trailing: ToggleSwitch(
             value: _dreamPrompts,
             onChanged: (value) => setState(() => _dreamPrompts = value),
-          ),
-        ),
-        SettingItem(
-          label: 'AI Suggestions',
-          trailing: ToggleSwitch(
-            value: _aiSuggestions,
-            onChanged: (value) => setState(() => _aiSuggestions = value),
           ),
         ),
       ],
