@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
-import '../models/models.dart';
 
 class JournalListScreen extends StatefulWidget {
   final bool showNavBar;
@@ -14,8 +14,89 @@ class JournalListScreen extends StatefulWidget {
 }
 
 class _JournalListScreenState extends State<JournalListScreen> {
+  List<Map<String, dynamic>> _dreams = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDreams();
+  }
+
+  Future<void> _loadDreams() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final response = await Supabase.instance.client
+          .from('journal_entries')
+          .select()
+          .eq('user_id', user.id)
+          .order('date', ascending: false)
+          .order('created_at', ascending: false);
+
+      setState(() {
+        _dreams = (response as List).cast<Map<String, dynamic>>();
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading dreams: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
   void _navigateToScreen(int index) {
     AppNavigator.navigateToIndex(context, NavIndex.journalList, index);
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+      final entryDate = DateTime(date.year, date.month, date.day);
+
+      if (entryDate == today) {
+        return 'Today';
+      } else if (entryDate == yesterday) {
+        return 'Yesterday';
+      } else {
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return '${months[date.month - 1]} ${date.day}, ${date.year}';
+      }
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  String _formatTime(String? timeStr) {
+    if (timeStr == null) return '';
+    try {
+      final parts = timeStr.split(':');
+      if (parts.length < 2) return timeStr;
+      int hour = int.parse(parts[0]);
+      final minute = parts[1];
+      final ampm = hour >= 12 ? 'PM' : 'AM';
+      if (hour > 12) hour -= 12;
+      if (hour == 0) hour = 12;
+      return '$hour:$minute $ampm';
+    } catch (e) {
+      return timeStr;
+    }
+  }
+
+  Map<String, List<Map<String, dynamic>>> _groupDreamsByDate() {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final dream in _dreams) {
+      final date = dream['date'] as String? ?? '';
+      if (!grouped.containsKey(date)) {
+        grouped[date] = [];
+      }
+      grouped[date]!.add(dream);
+    }
+    return grouped;
   }
 
   @override
@@ -27,65 +108,95 @@ class _JournalListScreenState extends State<JournalListScreen> {
               onTap: _navigateToScreen,
             )
           : null,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacing20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const GradientHeader(
-              icon: Icons.book_outlined,
-              title: 'Journal Entries',
-              description:
-                  'Review your past entries and track your progress over time.',
-            ),
-            const SizedBox(height: AppTheme.spacing30),
-            _buildEntriesList(),
-          ],
+      child: RefreshIndicator(
+        onRefresh: _loadDreams,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppTheme.spacing20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const GradientHeader(
+                icon: Icons.book_outlined,
+                title: 'Dream Journal',
+                description:
+                    'Review your dreams and track patterns over time.',
+              ),
+              const SizedBox(height: AppTheme.spacing30),
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildDreamsList(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEntriesList() {
-    final entries = [
-      JournalEntry(
-        date: 'Today, Dec 15',
-        time: '2:30 PM',
-        preview:
-            'Had a great morning workout session. Feeling energized and ready to tackle the day. Need to focus on completing the project proposal...',
-        tags: ['Exercise', 'Work'],
-      ),
-      JournalEntry(
-        date: 'Yesterday, Dec 14',
-        time: '8:15 PM',
-        preview:
-            'Reflected on the week\'s progress. Made good strides with my reading habit, but need to improve consistency with meditation...',
-        tags: ['Reflection', 'Habits'],
-      ),
-      JournalEntry(
-        date: 'Dec 13',
-        time: '6:45 PM',
-        preview:
-            'Completed the morning routine successfully. Feeling more organized and in control of my schedule...',
-        tags: ['Routine'],
-      ),
-      JournalEntry(
-        date: 'Dec 12',
-        time: '9:20 AM',
-        preview:
-            'Started the day with meditation and journaling. Set new goals for the month ahead...',
-        tags: ['Goals', 'Meditation'],
-      ),
-    ];
+  Widget _buildDreamsList() {
+    final groupedDreams = _groupDreamsByDate();
+
+    if (groupedDreams.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.nightlight_round, size: 64, color: AppTheme.textTertiary),
+            const SizedBox(height: AppTheme.spacing20),
+            Text(
+              'No dreams recorded yet',
+              style: AppTheme.bodySecondary,
+            ),
+            const SizedBox(height: AppTheme.spacing10),
+            Text(
+              'Start recording your dreams to track patterns and improve lucid dreaming',
+              style: AppTheme.caption,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
-      children: entries.map((entry) => _buildEntryItem(entry)).toList(),
+      children: groupedDreams.entries.map((entry) {
+        final date = entry.key;
+        final dreams = entry.value;
+        return _buildDateGroup(date, dreams);
+      }).toList(),
     );
   }
 
-  Widget _buildEntryItem(JournalEntry entry) {
+  Widget _buildDateGroup(String date, List<Map<String, dynamic>> dreams) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            left: AppTheme.spacing10,
+            bottom: AppTheme.spacing10,
+            top: AppTheme.spacing10,
+          ),
+          child: Text(
+            _formatDate(date),
+            style: AppTheme.heading2,
+          ),
+        ),
+        ...dreams.map((dream) => _buildDreamItem(dream)),
+        const SizedBox(height: AppTheme.spacing10),
+      ],
+    );
+  }
+
+  Widget _buildDreamItem(Map<String, dynamic> dream) {
+    final content = dream['content'] as String? ?? '';
+    final time = dream['time'] as String?;
+    final preview = content.length > 150 ? '${content.substring(0, 150)}...' : content;
+
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, AppRoutes.journalEntry),
+      onTap: () {
+        // Could navigate to a detail view in the future
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: AppTheme.spacing15),
         child: AppCard(
@@ -95,31 +206,29 @@ class _JournalListScreenState extends State<JournalListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(entry.date, style: AppTheme.bodySecondary),
                   Text(
-                    entry.time,
-                    style: AppTheme.caption.copyWith(
-                      color: AppTheme.textTertiary,
-                    ),
+                    'Dream',
+                    style: AppTheme.bodySecondary,
                   ),
+                  if (time != null)
+                    Text(
+                      _formatTime(time),
+                      style: AppTheme.caption.copyWith(
+                        color: AppTheme.textTertiary,
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: AppTheme.spacing10),
               Text(
-                entry.preview,
+                preview,
                 style: const TextStyle(
                   fontSize: AppTheme.fontSizeMedium,
                   color: AppTheme.textSecondary,
                   height: 1.5,
                 ),
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              Wrap(
-                spacing: AppTheme.spacing8,
-                runSpacing: AppTheme.spacing8,
-                children: entry.tags.map((tag) => TagChip(label: tag)).toList(),
               ),
             ],
           ),

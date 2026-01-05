@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
@@ -15,19 +16,20 @@ class JournalEntryScreen extends StatefulWidget {
 
 class _JournalEntryScreenState extends State<JournalEntryScreen>
     with TickerProviderStateMixin {
-  final _entryController = TextEditingController();
-  final _textFieldKey = GlobalKey();
+  final List<TextEditingController> _dreamControllers = [TextEditingController()];
+  final List<GlobalKey> _textFieldKeys = [GlobalKey()];
   late AnimationController _scanController;
   late Animation<double> _scanAnimation;
   bool _showScanEffect = true;
   final List<_Particle> _particles = [];
   String _previousText = '';
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _initScanAnimation();
-    _entryController.addListener(_onTextChanged);
+    _dreamControllers[0].addListener(_onTextChanged);
   }
 
   void _initScanAnimation() {
@@ -48,7 +50,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
   }
 
   void _onTextChanged() {
-    final currentText = _entryController.text;
+    final currentText = _dreamControllers[0].text;
     if (currentText.length > _previousText.length) {
       final newChar = currentText.substring(_previousText.length);
       if (newChar.isNotEmpty) {
@@ -62,10 +64,10 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Offset? cursorPosition;
 
-      if (_textFieldKey.currentContext != null) {
+      if (_textFieldKeys[0].currentContext != null) {
         RenderEditable? renderEditable;
         RenderBox? containerRenderBox =
-            _textFieldKey.currentContext!.findRenderObject() as RenderBox?;
+            _textFieldKeys[0].currentContext!.findRenderObject() as RenderBox?;
 
         if (containerRenderBox != null) {
           void findRenderEditable(RenderObject? obj) {
@@ -83,7 +85,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
         }
 
         if (renderEditable != null) {
-          final selection = _entryController.selection;
+          final selection = _dreamControllers[0].selection;
           final textPosition = TextPosition(offset: selection.baseOffset);
           final caretRect = renderEditable!.getLocalRectForCaret(textPosition);
 
@@ -109,6 +111,72 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
 
       _createParticleWithPosition(character, cursorPosition);
     });
+  }
+
+  void _addDream() {
+    setState(() {
+      final controller = TextEditingController();
+      _dreamControllers.add(controller);
+      _textFieldKeys.add(GlobalKey());
+    });
+  }
+
+  void _removeDream(int index) {
+    if (_dreamControllers.length <= 1) return;
+    setState(() {
+      _dreamControllers[index].dispose();
+      _dreamControllers.removeAt(index);
+      _textFieldKeys.removeAt(index);
+    });
+  }
+
+  Future<void> _saveDreams() async {
+    final nonEmptyDreams = _dreamControllers
+        .map((c) => c.text.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+
+    if (nonEmptyDreams.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter at least one dream')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      final now = DateTime.now();
+      final date = DateTime(now.year, now.month, now.day);
+
+      for (int i = 0; i < nonEmptyDreams.length; i++) {
+        await Supabase.instance.client.from('journal_entries').insert({
+          'user_id': user.id,
+          'content': nonEmptyDreams[i],
+          'date': date.toIso8601String().split('T')[0],
+          'time': now.add(Duration(seconds: i)).toIso8601String().split('T')[1].split('.')[0],
+          'metadata': {'dream_index': i, 'dream_order': i + 1},
+        });
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved ${nonEmptyDreams.length} dream${nonEmptyDreams.length > 1 ? 's' : ''}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving dreams: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   void _createParticleWithPosition(String character, Offset? cursorPosition) {
@@ -139,8 +207,10 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
 
   @override
   void dispose() {
-    _entryController.removeListener(_onTextChanged);
-    _entryController.dispose();
+    _dreamControllers[0].removeListener(_onTextChanged);
+    for (var controller in _dreamControllers) {
+      controller.dispose();
+    }
     _scanController.dispose();
     for (var particle in _particles) {
       particle.controller.dispose();
@@ -167,7 +237,31 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
                   'Write your thoughts freely. Habits mentioned in your entries will be automatically created and scheduled.',
             ),
             const SizedBox(height: AppTheme.spacing60),
-            Expanded(child: _buildEntryBox()),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ...List.generate(_dreamControllers.length, (index) => _buildDreamBox(index)),
+                    const SizedBox(height: AppTheme.spacing20),
+                    OutlinedButton.icon(
+                      onPressed: _addDream,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Dream'),
+                    ),
+                    if (_dreamControllers.any((c) => c.text.trim().isNotEmpty)) ...[
+                      const SizedBox(height: AppTheme.spacing20),
+                      ElevatedButton(
+                        onPressed: _isSaving ? null : _saveDreams,
+                        child: _isSaving
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Save Dreams'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -287,36 +381,61 @@ class _JournalEntryScreenState extends State<JournalEntryScreen>
     );
   }
 
-  Widget _buildEntryBox() {
-    return Container(
-      key: _textFieldKey,
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacing20),
-      child: TextField(
-        controller: _entryController,
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          filled: false,
-          contentPadding: EdgeInsets.zero,
-          hintText:
-              'Write your freeform journal entry here... Habits mentioned in your entries (e.g., \'I want to exercise every morning\' or \'wash hair every 4 days\') will be automatically created and scheduled.',
-          hintStyle: TextStyle(
-            color: AppTheme.textTertiary,
-            fontSize: AppTheme.fontSizeMedium,
-            height: 1.5,
+  Widget _buildDreamBox(int index) {
+    final isFirst = index == 0;
+    final canRemove = _dreamControllers.length > 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_dreamControllers.length > 1) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Dream ${index + 1}', style: AppTheme.heading2),
+              if (canRemove)
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () => _removeDream(index),
+                  color: AppTheme.textTertiary,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacing10),
+        ],
+        Container(
+          key: _textFieldKeys[index],
+          constraints: const BoxConstraints(minHeight: 200),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          ),
+          padding: const EdgeInsets.all(AppTheme.spacing20),
+          child: TextField(
+            controller: _dreamControllers[index],
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              filled: false,
+              contentPadding: EdgeInsets.zero,
+              hintText: isFirst
+                  ? 'Write your freeform journal entry here... Habits mentioned in your entries (e.g., \'I want to exercise every morning\' or \'wash hair every 4 days\') will be automatically created and scheduled.'
+                  : 'Describe another dream...',
+              hintStyle: const TextStyle(
+                color: AppTheme.textTertiary,
+                fontSize: AppTheme.fontSizeMedium,
+                height: 1.5,
+              ),
+            ),
+            style: AppTheme.body.copyWith(color: AppTheme.textPrimary, height: 1.5),
+            maxLines: null,
+            textAlignVertical: TextAlignVertical.top,
           ),
         ),
-        style: AppTheme.body.copyWith(color: AppTheme.textPrimary, height: 1.5),
-        maxLines: null,
-        expands: true,
-        textAlignVertical: TextAlignVertical.top,
-      ),
+        const SizedBox(height: AppTheme.spacing20),
+      ],
     );
   }
 }

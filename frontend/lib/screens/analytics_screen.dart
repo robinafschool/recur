@@ -36,18 +36,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           children: [
             const GradientHeader(
               icon: Icons.insights,
-              title: 'Analytics & Trends',
+              title: 'Dream Analytics',
               description:
-                  'Track your progress, view statistics, and analyze your habits over time.',
+                  'Track your dream patterns, view statistics, and analyze your lucid dreaming progress over time.',
             ),
             const SizedBox(height: AppTheme.spacing30),
             _buildFilterBar(),
             const SizedBox(height: AppTheme.spacing20),
             _buildStatsGrid(),
             const SizedBox(height: AppTheme.spacing20),
-            _buildChartBox('Habit Progress'),
+            _buildChartBox('Reality Check Completion'),
             const SizedBox(height: AppTheme.spacing20),
-            _buildChartBox('Journal Entries Over Time'),
+            _buildChartBox('Dreams Recorded Over Time'),
             const SizedBox(height: AppTheme.spacing20),
             _buildStreakBox(),
           ],
@@ -165,9 +165,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget _buildStreakBox() {
     final streaks = [
-      StreakItem(name: 'Morning Exercise', days: 15),
-      StreakItem(name: 'Reading', days: 8),
-      StreakItem(name: 'Meditation', days: 23),
+      StreakItem(name: 'Reality Checks', days: 15),
+      StreakItem(name: 'Dream Recording', days: 8),
+      StreakItem(name: 'Lucid Dreams', days: 23),
     ];
 
     return AppCard(

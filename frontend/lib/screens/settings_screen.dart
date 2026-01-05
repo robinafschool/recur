@@ -15,8 +15,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _habitReminders = true;
-  bool _journalPrompts = true;
+  bool _realityCheckReminders = true;
+  bool _dreamPrompts = true;
   bool _aiSuggestions = false;
 
   void _navigateToScreen(int index) {
@@ -152,17 +152,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: 'Notifications',
       items: [
         SettingItem(
-          label: 'Habit Reminders',
+          label: 'Reality Check Reminders',
           trailing: ToggleSwitch(
-            value: _habitReminders,
-            onChanged: (value) => setState(() => _habitReminders = value),
+            value: _realityCheckReminders,
+            onChanged: (value) =>
+                setState(() => _realityCheckReminders = value),
           ),
         ),
         SettingItem(
-          label: 'Journal Prompts',
+          label: 'Dream Recording Prompts',
           trailing: ToggleSwitch(
-            value: _journalPrompts,
-            onChanged: (value) => setState(() => _journalPrompts = value),
+            value: _dreamPrompts,
+            onChanged: (value) => setState(() => _dreamPrompts = value),
           ),
         ),
         SettingItem(

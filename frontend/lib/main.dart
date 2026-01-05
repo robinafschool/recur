@@ -46,7 +46,7 @@ class RecurApp extends StatelessWidget {
         AppRoutes.signup: (context) => const SignupScreen(),
         AppRoutes.home: (context) =>
             const MainNavigationScreen(initialIndex: 1),
-        AppRoutes.habits: (context) => const HabitsScreen(),
+        AppRoutes.habits: (context) => const RealityCheckScreen(),
         AppRoutes.journalList: (context) => const JournalListScreen(),
         AppRoutes.journalEntry: (context) => const JournalEntryScreen(),
         AppRoutes.aiSchedule: (context) => const AiScheduleScreen(),

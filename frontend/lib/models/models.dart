@@ -1,5 +1,6 @@
 // Barrel export for all model classes
 export 'habit_item.dart';
+export 'reality_check.dart';
 export 'journal_entry.dart';
 export 'scheduled_action.dart';
 export 'streak_item.dart';

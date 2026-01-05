@@ -2,6 +2,7 @@
 export 'login_screen.dart';
 export 'signup_screen.dart';
 export 'habits_screen.dart';
+export 'reality_check_screen.dart';
 export 'journal_list_screen.dart';
 export 'journal_entry_screen.dart';
 export 'ai_schedule_screen.dart';
