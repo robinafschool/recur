@@ -46,7 +46,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       case NavIndex.journalList:
         return const JournalListScreen(showNavBar: false);
       case NavIndex.journalEntry:
-        return const JournalEntryScreen(showNavBar: false);
+        return JournalEntryScreen(
+          showNavBar: false,
+          onSaved: () => setState(() => _currentIndex = NavIndex.journalList),
+        );
       case NavIndex.aiSchedule:
         return const AiScheduleScreen(showNavBar: false);
       case NavIndex.settings:

@@ -6,8 +6,15 @@ import '../navigation/navigation.dart';
 
 class JournalEntryScreen extends StatefulWidget {
   final bool showNavBar;
+  /// When provided and [showNavBar] is false, called after dreams are saved
+  /// instead of popping (e.g. to switch to journal list tab).
+  final VoidCallback? onSaved;
 
-  const JournalEntryScreen({super.key, this.showNavBar = true});
+  const JournalEntryScreen({
+    super.key,
+    this.showNavBar = true,
+    this.onSaved,
+  });
 
   @override
   State<JournalEntryScreen> createState() => _JournalEntryScreenState();
@@ -89,7 +96,11 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
       }
 
       if (mounted) {
-        Navigator.pop(context);
+        if (widget.showNavBar) {
+          Navigator.pop(context);
+        } else {
+          widget.onSaved?.call();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -159,28 +170,24 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
                       icon: const Icon(Icons.add),
                       label: const Text('Add Dream'),
                     ),
-                    if (_dreamControllers.any(
-                      (c) => c.text.trim().isNotEmpty,
-                    )) ...[
-                      SizedBox(height: hasMultipleDreams ? AppTheme.spacing12 : AppTheme.spacing20),
-                      ElevatedButton(
-                        onPressed: _isSaving ? null : _saveDreams,
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                          ),
+                    SizedBox(height: hasMultipleDreams ? AppTheme.spacing12 : AppTheme.spacing20),
+                    ElevatedButton(
+                      onPressed: _isSaving ? null : _saveDreams,
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                         ),
-                        child: _isSaving
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Save Dreams'),
                       ),
-                    ],
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Save Dreams'),
+                    ),
                   ],
                 ),
               ),
