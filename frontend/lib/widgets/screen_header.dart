@@ -19,13 +19,12 @@ class ScreenHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: AppTheme.heading1,
-        ),
+        Text(title, style: AppTheme.heading1),
         if (showSettingsButton)
           GestureDetector(
-            onTap: onSettingsTap ?? () => Navigator.pushNamed(context, '/settings'),
+            onTap:
+                onSettingsTap ??
+                () => Navigator.pushNamed(context, '/settings'),
             child: Container(
               width: 50,
               height: 50,
@@ -47,4 +46,3 @@ class ScreenHeader extends StatelessWidget {
     );
   }
 }
-

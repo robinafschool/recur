@@ -212,6 +212,185 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
     }
   }
 
+  Future<void> _showCreateRealityCheckDialog() async {
+    String? selectedType;
+    final nameController = TextEditingController();
+    final intervalController = TextEditingController();
+    final eventController = TextEditingController();
+
+    if (!mounted) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create Reality Check'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    hintText: 'e.g., Check hands, Count fingers',
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing20),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: const InputDecoration(
+                    labelText: 'Type',
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'interval', child: Text('Interval')),
+                    DropdownMenuItem(value: 'event', child: Text('Event-based')),
+                  ],
+                  onChanged: (value) {
+                    setDialogState(() => selectedType = value);
+                  },
+                ),
+                if (selectedType == 'interval') ...[
+                  const SizedBox(height: AppTheme.spacing20),
+                  TextField(
+                    controller: intervalController,
+                    decoration: const InputDecoration(
+                      labelText: 'Interval (minutes)',
+                      hintText: 'e.g., 120 for every 2 hours',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+                if (selectedType == 'event') ...[
+                  const SizedBox(height: AppTheme.spacing20),
+                  TextField(
+                    controller: eventController,
+                    decoration: const InputDecoration(
+                      labelText: 'Event Description',
+                      hintText: 'e.g., when you see your pet',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isEmpty || selectedType == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill in all required fields')),
+                  );
+                  return;
+                }
+
+                if (selectedType == 'interval' && intervalController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter interval minutes')),
+                  );
+                  return;
+                }
+
+                if (selectedType == 'event' && eventController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter event description')),
+                  );
+                  return;
+                }
+
+                await _createRealityCheck(
+                  name: nameController.text,
+                  type: selectedType!,
+                  intervalMinutes: selectedType == 'interval'
+                      ? int.tryParse(intervalController.text)
+                      : null,
+                  eventDescription: selectedType == 'event' ? eventController.text : null,
+                );
+
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createRealityCheck({
+    required String name,
+    required String type,
+    int? intervalMinutes,
+    String? eventDescription,
+  }) async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      await Supabase.instance.client.from('reality_checks').insert({
+        'user_id': user.id,
+        'name': name,
+        'type': type,
+        'interval_minutes': intervalMinutes,
+        'event_description': eventDescription,
+        'is_active': true,
+      });
+
+      await _loadRealityChecks();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating reality check: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteRealityCheck(RealityCheck realityCheck) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Reality Check'),
+        content: Text('Are you sure you want to delete "${realityCheck.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await Supabase.instance.client
+          .from('reality_checks')
+          .delete()
+          .eq('id', realityCheck.id);
+
+      await _loadRealityChecks();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting reality check: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GradientScaffold(
@@ -257,16 +436,14 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
               ),
               const SizedBox(height: AppTheme.spacing10),
               Text(
-                'Create reality checks in the Reality Checks screen to manage them here',
+                'Create your first reality check to manage schedules here.',
                 style: AppTheme.caption,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTheme.spacing20),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.habits);
-                },
-                child: const Text('Go to Reality Checks'),
+                onPressed: _showCreateRealityCheckDialog,
+                child: const Text('Create Reality Check'),
               ),
             ],
           ),
@@ -278,7 +455,18 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Your Reality Checks', style: AppTheme.heading2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text('Your Reality Checks', style: AppTheme.heading2),
+              TextButton.icon(
+                onPressed: _showCreateRealityCheckDialog,
+                icon: const Icon(Icons.add, size: 20),
+                label: const Text('Add'),
+              ),
+            ],
+          ),
           const SizedBox(height: AppTheme.spacing15),
           ..._realityChecks.map((rc) => _buildRealityCheckItem(rc)),
         ],
@@ -362,6 +550,13 @@ class _AiScheduleScreenState extends State<AiScheduleScreen> {
               TextButton(
                 onPressed: () => _editRealityCheck(rc),
                 child: const Text('Edit'),
+              ),
+              TextButton(
+                onPressed: () => _deleteRealityCheck(rc),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
               ),
             ],
           ),

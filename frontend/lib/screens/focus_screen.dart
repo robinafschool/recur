@@ -34,7 +34,8 @@ class _FocusScreenState extends State<FocusScreen> {
             children: [
               ScreenHeader(
                 title: 'Focus Mode',
-                onSettingsTap: () => Navigator.pushNamed(context, AppRoutes.settings),
+                onSettingsTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.settings),
               ),
               const SizedBox(height: AppTheme.spacing40),
               _buildTimerDisplay(),
@@ -131,15 +132,17 @@ class _FocusScreenState extends State<FocusScreen> {
         children: [
           const Text('Blocked Apps', style: AppTheme.heading2),
           const SizedBox(height: AppTheme.spacing15),
-          ..._apps.map((app) => LabeledListItem(
-                label: app.name,
-                trailing: ToggleSwitch(
-                  value: app.isBlocked,
-                  onChanged: (value) {
-                    setState(() => app.isBlocked = value);
-                  },
-                ),
-              )),
+          ..._apps.map(
+            (app) => LabeledListItem(
+              label: app.name,
+              trailing: ToggleSwitch(
+                value: app.isBlocked,
+                onChanged: (value) {
+                  setState(() => app.isBlocked = value);
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -182,9 +185,7 @@ class _FocusScreenState extends State<FocusScreen> {
             ),
           ),
           const SizedBox(width: AppTheme.spacing12),
-          Expanded(
-            child: Text(label, style: AppTheme.body),
-          ),
+          Expanded(child: Text(label, style: AppTheme.body)),
         ],
       ),
     );

@@ -33,7 +33,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
             children: [
               ScreenHeader(
                 title: 'welcome back <name>',
-                onSettingsTap: () => Navigator.pushNamed(context, AppRoutes.settings),
+                onSettingsTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.settings),
               ),
               const SizedBox(height: AppTheme.spacing30),
               Expanded(child: _buildHabitsChecklist()),
@@ -62,13 +63,15 @@ class _HabitsScreenState extends State<HabitsScreen> {
       constraints: const BoxConstraints(minHeight: 400),
       child: Column(
         children: _habits
-            .map((habit) => CheckboxItem(
-                  isChecked: habit.isCompleted,
-                  label: habit.name,
-                  onChanged: (value) {
-                    setState(() => habit.isCompleted = value);
-                  },
-                ))
+            .map(
+              (habit) => CheckboxItem(
+                isChecked: habit.isCompleted,
+                label: habit.name,
+                onChanged: (value) {
+                  setState(() => habit.isCompleted = value);
+                },
+              ),
+            )
             .toList(),
       ),
     );

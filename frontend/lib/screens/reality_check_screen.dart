@@ -78,12 +78,16 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
                 const SizedBox(height: AppTheme.spacing20),
                 DropdownButtonFormField<String>(
                   value: selectedType,
-                  decoration: const InputDecoration(
-                    labelText: 'Type',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Type'),
                   items: const [
-                    DropdownMenuItem(value: 'interval', child: Text('Interval')),
-                    DropdownMenuItem(value: 'event', child: Text('Event-based')),
+                    DropdownMenuItem(
+                      value: 'interval',
+                      child: Text('Interval'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'event',
+                      child: Text('Event-based'),
+                    ),
                   ],
                   onChanged: (value) {
                     setDialogState(() => selectedType = value);
@@ -122,21 +126,28 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
               onPressed: () async {
                 if (nameController.text.isEmpty || selectedType == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill in all required fields')),
+                    const SnackBar(
+                      content: Text('Please fill in all required fields'),
+                    ),
                   );
                   return;
                 }
 
-                if (selectedType == 'interval' && intervalController.text.isEmpty) {
+                if (selectedType == 'interval' &&
+                    intervalController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter interval minutes')),
+                    const SnackBar(
+                      content: Text('Please enter interval minutes'),
+                    ),
                   );
                   return;
                 }
 
                 if (selectedType == 'event' && eventController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter event description')),
+                    const SnackBar(
+                      content: Text('Please enter event description'),
+                    ),
                   );
                   return;
                 }
@@ -147,7 +158,9 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
                   intervalMinutes: selectedType == 'interval'
                       ? int.tryParse(intervalController.text)
                       : null,
-                  eventDescription: selectedType == 'event' ? eventController.text : null,
+                  eventDescription: selectedType == 'event'
+                      ? eventController.text
+                      : null,
                 );
 
                 if (context.mounted) Navigator.pop(context);
@@ -214,7 +227,9 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Reality Check'),
-        content: Text('Are you sure you want to delete "${realityCheck.name}"?'),
+        content: Text(
+          'Are you sure you want to delete "${realityCheck.name}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -222,9 +237,7 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -260,7 +273,8 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
             children: [
               ScreenHeader(
                 title: 'Reality Checks',
-                onSettingsTap: () => Navigator.pushNamed(context, AppRoutes.settings),
+                onSettingsTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.settings),
               ),
               const SizedBox(height: AppTheme.spacing10),
               const Text(
@@ -295,12 +309,13 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 64, color: AppTheme.textTertiary),
-            const SizedBox(height: AppTheme.spacing20),
-            Text(
-              'No reality checks yet',
-              style: AppTheme.bodySecondary,
+            Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: AppTheme.textTertiary,
             ),
+            const SizedBox(height: AppTheme.spacing20),
+            Text('No reality checks yet', style: AppTheme.bodySecondary),
             const SizedBox(height: AppTheme.spacing10),
             Text(
               'Create your first reality check to start training for lucid dreams',
@@ -315,7 +330,9 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
     return AppCard(
       constraints: const BoxConstraints(minHeight: 400),
       child: ListView(
-        children: _realityChecks.map((rc) => _buildRealityCheckItem(rc)).toList(),
+        children: _realityChecks
+            .map((rc) => _buildRealityCheckItem(rc))
+            .toList(),
       ),
     );
   }
@@ -346,10 +363,7 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      rc.name,
-                      style: AppTheme.heading2,
-                    ),
+                    Text(rc.name, style: AppTheme.heading2),
                     const SizedBox(height: AppTheme.spacing8),
                     Row(
                       children: [
@@ -366,7 +380,9 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
                         if (!rc.isActive)
                           TagChip(
                             label: 'Inactive',
-                            backgroundColor: AppTheme.textTertiary.withValues(alpha: 0.2),
+                            backgroundColor: AppTheme.textTertiary.withValues(
+                              alpha: 0.2,
+                            ),
                             textColor: AppTheme.textTertiary,
                           ),
                       ],
@@ -377,7 +393,9 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
               IconButton(
                 icon: Icon(
                   rc.isActive ? Icons.toggle_on : Icons.toggle_off,
-                  color: rc.isActive ? AppTheme.primaryColor : AppTheme.textTertiary,
+                  color: rc.isActive
+                      ? AppTheme.primaryColor
+                      : AppTheme.textTertiary,
                   size: 32,
                 ),
                 onPressed: () => _toggleActive(rc),
@@ -385,10 +403,7 @@ class _RealityCheckScreenState extends State<RealityCheckScreen> {
             ],
           ),
           const SizedBox(height: AppTheme.spacing10),
-          Text(
-            scheduleText,
-            style: AppTheme.bodySecondary,
-          ),
+          Text(scheduleText, style: AppTheme.bodySecondary),
           const SizedBox(height: AppTheme.spacing10),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
