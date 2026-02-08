@@ -58,4 +58,20 @@ class RealityCheck {
       isActive: isActive ?? this.isActive,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RealityCheck &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          type == other.type &&
+          intervalMinutes == other.intervalMinutes &&
+          eventDescription == other.eventDescription &&
+          isActive == other.isActive;
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, type, intervalMinutes, eventDescription, isActive);
 }

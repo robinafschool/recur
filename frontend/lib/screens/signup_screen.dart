@@ -1,21 +1,22 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
+import '../view_models/auth_view_model.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -25,66 +26,25 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleSignUp() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final response = await Supabase.instance.client.auth.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        emailRedirectTo: null, // No email verification
-      );
-
-      if (response.user != null) {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to create account. Please try again.'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        String errorMessage = 'Failed to create account. ';
-        if (e.toString().contains('Operation not permitted') ||
-            e.toString().contains('SocketConnection failed')) {
-          errorMessage +=
-              'Network permission denied. Please check your network settings and try again.';
-        } else if (e.toString().contains('Invalid login credentials')) {
-          errorMessage += 'Invalid email or password.';
-        } else if (e.toString().contains('User already registered')) {
-          errorMessage += 'An account with this email already exists.';
-        } else {
-          errorMessage += e
-              .toString()
-              .replaceAll('Exception: ', '')
-              .replaceAll('AuthRetryableFetchException: ', '');
-        }
-
+    final success = await ref.read(authViewModelProvider.notifier).signUp(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+    if (success && mounted) {
+      await Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } else if (mounted) {
+      final error = ref.read(authViewModelProvider).errorMessage;
+      if (error != null && error.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
+            content: Text(error),
             backgroundColor: AppTheme.errorColor,
             duration: const Duration(seconds: 5),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ref.read(authViewModelProvider.notifier).clearError();
       }
     }
   }
@@ -95,6 +55,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewModelProvider);
+    final isLoading = authState.isLoading;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -124,7 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             keyboardType: TextInputType.emailAddress,
                             style: AppTheme.body,
-                            enabled: !_isLoading,
+                            enabled: !isLoading,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your email';
@@ -145,7 +108,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             obscureText: true,
                             style: AppTheme.body,
-                            enabled: !_isLoading,
+                            enabled: !isLoading,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your password';
@@ -158,8 +121,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           const SizedBox(height: AppTheme.spacing20),
                           ElevatedButton(
-                            onPressed: _isLoading ? null : _handleSignUp,
-                            child: _isLoading
+                            onPressed: isLoading ? null : () => unawaited(_handleSignUp()),
+                            child: isLoading
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,
@@ -178,10 +141,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   const SizedBox(height: AppTheme.spacing20),
                   GestureDetector(
-                    onTap: () {
-                      // Navigate to sign up
-                      _handleLoginRedirect();
-                    },
+                    onTap: _handleLoginRedirect,
                     child: const Text(
                       'Already have an account? Log in',
                       style: TextStyle(

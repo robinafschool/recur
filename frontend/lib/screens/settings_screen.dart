@@ -1,20 +1,22 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
 import '../models/models.dart';
+import '../providers/providers.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   final bool showNavBar;
 
   const SettingsScreen({super.key, this.showNavBar = true});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _realityCheckReminders = true;
   bool _dreamPrompts = true;
 
@@ -61,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAccountInfo() {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = ref.watch(authRepositoryProvider).currentUser;
 
     // Get user's email
     final email = user?.email ?? 'Not signed in';
@@ -265,11 +267,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildLogoutButton() {
-    return OutlinedButton(
-      onPressed: () async {
-        // Show confirmation dialog
-        final shouldLogout = await showDialog<bool>(
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Sign Out'),
@@ -292,9 +291,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (shouldLogout == true && mounted) {
           try {
-            await Supabase.instance.client.auth.signOut();
+            await ref.read(authRepositoryProvider).signOut();
             if (mounted) {
-              Navigator.pushNamedAndRemoveUntil(
+              await Navigator.pushNamedAndRemoveUntil(
                 context,
                 AppRoutes.login,
                 (route) => false,
@@ -311,7 +310,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }
           }
         }
-      },
+  }
+
+  Widget _buildLogoutButton() {
+    return OutlinedButton(
+      onPressed: () => unawaited(_handleLogout()),
       style: OutlinedButton.styleFrom(
         side: const BorderSide(
           color: AppTheme.errorColor,

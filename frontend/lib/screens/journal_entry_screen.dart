@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
+import '../view_models/journal_entry_view_model.dart';
 
-class JournalEntryScreen extends StatefulWidget {
+class JournalEntryScreen extends ConsumerStatefulWidget {
   final bool showNavBar;
-  /// When provided and [showNavBar] is false, called after dreams are saved
-  /// instead of popping (e.g. to switch to journal list tab).
   final VoidCallback? onSaved;
 
   const JournalEntryScreen({
@@ -17,26 +16,28 @@ class JournalEntryScreen extends StatefulWidget {
   });
 
   @override
-  State<JournalEntryScreen> createState() => _JournalEntryScreenState();
+  ConsumerState<JournalEntryScreen> createState() => _JournalEntryScreenState();
 }
 
-class _JournalEntryScreenState extends State<JournalEntryScreen> {
+class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
   final List<TextEditingController> _dreamControllers = [
     TextEditingController(),
   ];
   final List<GlobalKey> _textFieldKeys = [GlobalKey()];
   final ScrollController _scrollController = ScrollController();
-  bool _isSaving = false;
 
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    for (var controller in _dreamControllers) {
+      controller.dispose();
+    }
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _addDream() {
     setState(() {
-      final controller = TextEditingController();
-      _dreamControllers.add(controller);
+      _dreamControllers.add(TextEditingController());
       _textFieldKeys.add(GlobalKey());
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -66,35 +67,16 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
         .toList();
 
     if (nonEmptyDreams.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter at least one dream')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter at least one dream')),
+        );
+      }
       return;
     }
 
-    setState(() => _isSaving = true);
-
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
-
-      final now = DateTime.now();
-      final date = DateTime(now.year, now.month, now.day);
-
-      for (int i = 0; i < nonEmptyDreams.length; i++) {
-        await Supabase.instance.client.from('journal_entries').insert({
-          'user_id': user.id,
-          'content': nonEmptyDreams[i],
-          'date': date.toIso8601String().split('T')[0],
-          'time': now
-              .add(Duration(seconds: i))
-              .toIso8601String()
-              .split('T')[1]
-              .split('.')[0],
-          'metadata': {'dream_index': i, 'dream_order': i + 1},
-        });
-      }
-
+      await ref.read(journalEntryViewModelProvider.notifier).saveDreams(nonEmptyDreams);
       if (mounted) {
         if (widget.showNavBar) {
           Navigator.pop(context);
@@ -111,22 +93,11 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving dreams: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving dreams: $e')),
+        );
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
-  }
-
-  @override
-  void dispose() {
-    for (var controller in _dreamControllers) {
-      controller.dispose();
-    }
-    _scrollController.dispose();
-    super.dispose();
   }
 
   void _navigateToScreen(int index) {
@@ -135,6 +106,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isSaving = ref.watch(journalEntryViewModelProvider).isSaving;
     final hasMultipleDreams = _dreamControllers.length > 1;
     final content = GradientScaffold(
       child: Padding(
@@ -172,13 +144,13 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
                     ),
                     SizedBox(height: hasMultipleDreams ? AppTheme.spacing12 : AppTheme.spacing20),
                     ElevatedButton(
-                      onPressed: _isSaving ? null : _saveDreams,
+                      onPressed: isSaving ? null : _saveDreams,
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                         ),
                       ),
-                      child: _isSaving
+                      child: isSaving
                           ? const SizedBox(
                               height: 20,
                               width: 20,

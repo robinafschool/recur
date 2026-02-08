@@ -1,8 +1,10 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_theme.dart';
 import 'navigation/navigation.dart';
+import 'providers/providers.dart';
 import 'screens/screens.dart';
 
 void main() async {
@@ -24,16 +26,15 @@ void main() async {
     rethrow;
   }
 
-  runApp(const RecurApp());
+  runApp(const ProviderScope(child: RecurApp()));
 }
 
-class RecurApp extends StatelessWidget {
+class RecurApp extends ConsumerWidget {
   const RecurApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Check if user is already authenticated
-    final session = Supabase.instance.client.auth.currentSession;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(authRepositoryProvider).currentSession;
     final initialRoute = session != null ? AppRoutes.home : AppRoutes.login;
 
     return MaterialApp(

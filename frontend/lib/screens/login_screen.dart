@@ -1,21 +1,22 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
+import '../view_models/auth_view_model.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -25,63 +26,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleSignIn() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-
-      if (response.user != null) {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to sign in. Please try again.'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        String errorMessage = 'Failed to sign in. ';
-        if (e.toString().contains('Operation not permitted') ||
-            e.toString().contains('SocketConnection failed')) {
-          errorMessage +=
-              'Network permission denied. Please check your network settings and try again.';
-        } else if (e.toString().contains('Invalid login credentials')) {
-          errorMessage += 'Invalid email or password.';
-        } else {
-          errorMessage += e
-              .toString()
-              .replaceAll('Exception: ', '')
-              .replaceAll('AuthRetryableFetchException: ', '');
-        }
-
+    final vm = ref.read(authViewModelProvider.notifier);
+    final success = await vm.signIn(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+    if (success && mounted) {
+      await Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } else if (mounted) {
+      final error = ref.read(authViewModelProvider).errorMessage;
+      if (error != null && error.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
+            content: Text(error),
             backgroundColor: AppTheme.errorColor,
             duration: const Duration(seconds: 5),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ref.read(authViewModelProvider.notifier).clearError();
       }
     }
   }
@@ -92,6 +56,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewModelProvider);
+    final isLoading = authState.isLoading;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -121,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             keyboardType: TextInputType.emailAddress,
                             style: AppTheme.body,
-                            enabled: !_isLoading,
+                            enabled: !isLoading,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your email';
@@ -142,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             obscureText: true,
                             style: AppTheme.body,
-                            enabled: !_isLoading,
+                            enabled: !isLoading,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your password';
@@ -152,8 +119,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: AppTheme.spacing20),
                           ElevatedButton(
-                            onPressed: _isLoading ? null : _handleSignIn,
-                            child: _isLoading
+                            onPressed: isLoading ? null : () => unawaited(_handleSignIn()),
+                            child: isLoading
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,
@@ -172,10 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: AppTheme.spacing20),
                   GestureDetector(
-                    onTap: () {
-                      // Navigate to sign up
-                      _handleSignUpRedirect();
-                    },
+                    onTap: _handleSignUpRedirect,
                     child: const Text(
                       'Don\'t have an account? Sign up',
                       style: TextStyle(
