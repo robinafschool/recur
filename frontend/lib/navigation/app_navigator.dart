@@ -8,7 +8,7 @@ class NavIndex {
   static const int analytics = 0;
   static const int journalList = 1;
   static const int journalEntry = 2;
-  static const int aiSchedule = 3;
+  static const int schedule = 3;
   static const int settings = 4;
 }
 
@@ -22,7 +22,7 @@ class AppRoutes {
   static const String analytics = '/analytics';
   static const String journalList = '/journal-list';
   static const String journalEntry = '/journal-entry';
-  static const String aiSchedule = '/ai-schedule';
+  static const String schedule = '/schedule';
   static const String settings = '/settings';
   static const String habits = '/habits';
   static const String focus = '/focus';
@@ -32,7 +32,7 @@ class AppRoutes {
     analytics,
     journalList,
     journalEntry,
-    aiSchedule,
+    schedule,
     settings,
   ];
 }

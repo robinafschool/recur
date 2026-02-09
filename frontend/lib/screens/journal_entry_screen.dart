@@ -4,6 +4,7 @@ import '../config/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../navigation/navigation.dart';
 import '../view_models/journal_entry_view_model.dart';
+import '../view_models/journal_list_view_model.dart';
 
 class JournalEntryScreen extends ConsumerStatefulWidget {
   final bool showNavBar;
@@ -78,18 +79,21 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
     try {
       await ref.read(journalEntryViewModelProvider.notifier).saveDreams(nonEmptyDreams);
       if (mounted) {
-        if (widget.showNavBar) {
-          Navigator.pop(context);
-        } else {
-          widget.onSaved?.call();
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Saved ${nonEmptyDreams.length} dream${nonEmptyDreams.length > 1 ? 's' : ''}',
+        await ref.read(journalListProvider.notifier).refresh();
+        if (mounted) {
+          if (widget.showNavBar) {
+            Navigator.pop(context);
+          } else {
+            widget.onSaved?.call();
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Saved ${nonEmptyDreams.length} dream${nonEmptyDreams.length > 1 ? 's' : ''}',
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

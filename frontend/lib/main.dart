@@ -47,10 +47,10 @@ class RecurApp extends ConsumerWidget {
         AppRoutes.signup: (context) => const SignupScreen(),
         AppRoutes.home: (context) =>
             const MainNavigationScreen(initialIndex: 1),
-        AppRoutes.habits: (context) => const RealityCheckScreen(),
+        AppRoutes.habits: (context) => const ScheduleScreen(),
         AppRoutes.journalList: (context) => const JournalListScreen(),
         AppRoutes.journalEntry: (context) => const JournalEntryScreen(),
-        AppRoutes.aiSchedule: (context) => const AiScheduleScreen(),
+        AppRoutes.schedule: (context) => const ScheduleScreen(),
         AppRoutes.analytics: (context) => const AnalyticsScreen(),
         AppRoutes.focus: (context) => const FocusScreen(),
         AppRoutes.settings: (context) => const SettingsScreen(),
