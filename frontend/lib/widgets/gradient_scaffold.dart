@@ -39,6 +39,7 @@ class GradientScaffold extends StatelessWidget {
     }
 
     return Scaffold(
+      extendBody: true,
       body: gradientContainer,
       bottomNavigationBar: bottomNavigationBar,
     );

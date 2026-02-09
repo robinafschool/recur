@@ -1,0 +1,6 @@
+{
+  "compilerOptions": { "strict": true },
+  "imports": {
+    "supabase": "npm:@supabase/supabase-js@2"
+  }
+}

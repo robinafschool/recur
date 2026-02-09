@@ -26,15 +26,21 @@ class JournalListScreen extends ConsumerWidget {
         onRefresh: () => ref.read(journalListProvider.notifier).refresh(),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppTheme.spacing20),
+          padding: const EdgeInsets.only(
+            top: AppTheme.spacing20,
+            bottom: AppTheme.spacing20,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const GradientHeader(
-                icon: Icons.book_outlined,
-                title: 'Dream Journal',
-                description:
-                    'Review your dreams and track patterns over time.',
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppTheme.spacing20),
+                child: GradientHeader(
+                  icon: Icons.book_outlined,
+                  title: 'Dream Journal',
+                  description:
+                      'Review your dreams and track patterns over time.',
+                ),
               ),
               const SizedBox(height: AppTheme.spacing30),
               asyncDreams.when(
@@ -52,14 +58,35 @@ class JournalListScreen extends ConsumerWidget {
   }
 }
 
-class _DreamsList extends StatelessWidget {
+class _DreamsList extends StatefulWidget {
   const _DreamsList({required this.dreams});
 
   final List<JournalEntryRecord> dreams;
 
+  static Map<String, List<JournalEntryRecord>> _groupDreamsByDate(List<JournalEntryRecord> dreams) {
+    final grouped = <String, List<JournalEntryRecord>>{};
+    for (final dream in dreams) {
+      grouped.putIfAbsent(dream.date, () => []).add(dream);
+    }
+    return grouped;
+  }
+
+  @override
+  State<_DreamsList> createState() => _DreamsListState();
+}
+
+class _DreamsListState extends State<_DreamsList> {
+  PageController? _pageController;
+
+  @override
+  void dispose() {
+    _pageController?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final grouped = _groupDreamsByDate(dreams);
+    final grouped = _DreamsList._groupDreamsByDate(widget.dreams);
     if (grouped.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing60),
@@ -78,44 +105,36 @@ class _DreamsList extends StatelessWidget {
         ),
       );
     }
-    return Column(
-      children: grouped.entries.map((e) => _DateGroup(date: e.key, dreams: e.value)).toList(),
-    );
-  }
-
-  static Map<String, List<JournalEntryRecord>> _groupDreamsByDate(List<JournalEntryRecord> dreams) {
-    final grouped = <String, List<JournalEntryRecord>>{};
-    for (final dream in dreams) {
-      grouped.putIfAbsent(dream.date, () => []).add(dream);
+    final dates = grouped.keys.toList()
+      ..sort((a, b) => a.compareTo(b));
+    if (_pageController == null) {
+      _pageController = PageController(initialPage: dates.length - 1);
     }
-    return grouped;
+    final viewportHeight = MediaQuery.of(context).size.height;
+    final boardHeight = viewportHeight * 1.2;
+    return SizedBox(
+      height: boardHeight,
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: dates.length,
+        itemBuilder: (context, i) => Center(
+          child: _DayColumn(
+            date: dates[i],
+            dreams: grouped[dates[i]]!,
+          ),
+        ),
+      ),
+    );
   }
 }
 
-class _DateGroup extends StatelessWidget {
-  const _DateGroup({required this.date, required this.dreams});
+class _DayColumn extends StatelessWidget {
+  const _DayColumn({required this.date, required this.dreams});
 
   final String date;
   final List<JournalEntryRecord> dreams;
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(
-            left: AppTheme.spacing10,
-            bottom: AppTheme.spacing10,
-            top: AppTheme.spacing10,
-          ),
-          child: Text(_formatDate(date), style: AppTheme.heading2),
-        ),
-        ...dreams.map((dream) => _DreamItem(dream: dream)),
-        const SizedBox(height: AppTheme.spacing10),
-      ],
-    );
-  }
+  static const double _columnWidth = 320;
 
   static String _formatDate(String dateStr) {
     try {
@@ -132,6 +151,42 @@ class _DateGroup extends StatelessWidget {
       return dateStr;
     }
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _columnWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 4,
+              bottom: AppTheme.spacing12,
+            ),
+            child: Text(
+              _formatDate(date),
+              style: AppTheme.heading2.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Material(
+              type: MaterialType.transparency,
+              child: ClipRect(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: dreams.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: AppTheme.spacing10),
+                  itemBuilder: (context, i) => _DreamItem(dream: dreams[i]),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _DreamItem extends StatelessWidget {
@@ -145,32 +200,34 @@ class _DreamItem extends StatelessWidget {
     final time = dream.time;
     final preview = content.length > 150 ? '${content.substring(0, 150)}...' : content;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppTheme.spacing15),
-      child: AppCard(
+    return AppCard(
+      boxShadow: const [],
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacing12),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Dream', style: AppTheme.bodySecondary),
+                Text('Dream', style: AppTheme.caption.copyWith(color: AppTheme.textTertiary)),
                 if (time != null)
                   Text(
                     _formatTime(time),
-                    style: AppTheme.caption.copyWith(color: AppTheme.textTertiary),
+                    style: AppTheme.caption.copyWith(color: AppTheme.textTertiary, fontSize: 11),
                   ),
               ],
             ),
-            const SizedBox(height: AppTheme.spacing10),
+            const SizedBox(height: 6),
             Text(
               preview,
               style: const TextStyle(
-                fontSize: AppTheme.fontSizeMedium,
+                fontSize: AppTheme.fontSizeSmall,
                 color: AppTheme.textSecondary,
-                height: 1.5,
+                height: 1.4,
               ),
-              maxLines: 3,
+              maxLines: 4,
               overflow: TextOverflow.ellipsis,
             ),
           ],

@@ -4,6 +4,7 @@ import '../config/app_theme.dart';
 import '../navigation/navigation.dart';
 import '../utils/dream_stats.dart';
 import '../view_models/journal_list_view_model.dart';
+import '../view_models/word_cloud_view_model.dart';
 import '../widgets/widgets.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
@@ -372,6 +373,117 @@ class _AnalyticsContent extends StatelessWidget {
               color: AppTheme.textSecondary,
               height: 1.5,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WordCloudCard extends ConsumerWidget {
+  const _WordCloudCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncWords = ref.watch(wordCloudProvider);
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.cloud_outlined, color: AppTheme.primaryColor, size: 22),
+              const SizedBox(width: AppTheme.spacing8),
+              Text('Word cloud', style: AppTheme.heading2),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacing12),
+          asyncWords.when(
+            loading: () => const SizedBox(
+              height: 120,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, _) => Text(
+              'Could not load word cloud. Pull to retry.',
+              style: AppTheme.bodySecondary,
+            ),
+            data: (words) {
+              if (words.isEmpty) {
+                return Text(
+                  'Record dreams to see common words here.',
+                  style: AppTheme.bodySecondary,
+                );
+              }
+              const topN = 25;
+              final sorted = words.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value));
+              final top = sorted.take(topN).toList();
+              final maxCount = top.isEmpty ? 1 : top.first.value.toDouble();
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 200,
+                    child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 3.0,
+                  boundaryMargin: const EdgeInsets.all(80),
+                  child: Center(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: top.map((e) {
+                        final t = (e.value / maxCount).clamp(0.2, 1.0);
+                        final fontSize = 11.0 + 12.0 * t;
+                        final bubbleScale = 0.7 + 0.6 * t;
+                        return Transform.scale(
+                          scale: bubbleScale,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor
+                                  .withValues(alpha: 0.12 + 0.2 * t),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppTheme.primaryColor
+                                    .withValues(alpha: 0.3 + 0.4 * t),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Text(
+                              e.key,
+                              style: AppTheme.body.copyWith(
+                                fontSize: fontSize,
+                                fontWeight: e.value > 2
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: AppTheme.primaryColor
+                                    .withValues(alpha: 0.7 + 0.3 * t),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Pinch to zoom, drag to explore.',
+                    style: AppTheme.caption.copyWith(
+                      color: AppTheme.textTertiary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

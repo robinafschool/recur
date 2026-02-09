@@ -6,12 +6,15 @@ class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final BoxConstraints? constraints;
+  /// When null, uses [AppTheme.cardShadow]. Pass an empty list for no shadow.
+  final List<BoxShadow>? boxShadow;
 
   const AppCard({
     super.key,
     required this.child,
     this.padding,
     this.constraints,
+    this.boxShadow,
   });
 
   @override
@@ -20,7 +23,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: AppTheme.cardShadow,
+        boxShadow: boxShadow ?? AppTheme.cardShadow,
       ),
       padding: padding ?? const EdgeInsets.all(AppTheme.spacing20),
       constraints: constraints,
