@@ -80,11 +80,13 @@ class _AnalyticsContent extends StatelessWidget {
           const SizedBox(height: AppTheme.spacing20),
           _buildStatsGrid(),
           const SizedBox(height: AppTheme.spacing20),
+          _buildStreakCard(context),
+          const SizedBox(height: AppTheme.spacing20),
           _buildDreamsPerDayChart(context),
           const SizedBox(height: AppTheme.spacing20),
-          _buildDescriptivenessCard(context),
+          _buildWordCloudCard(context),
           const SizedBox(height: AppTheme.spacing20),
-          _buildWeekComparison(context),
+          _buildDescriptivenessCard(context),
           const SizedBox(height: AppTheme.spacing20),
           _buildTipsCard(context),
         ],
@@ -293,50 +295,60 @@ class _AnalyticsContent extends StatelessWidget {
     );
   }
 
-  Widget _buildWeekComparison(BuildContext context) {
+  Widget _buildStreakCard(BuildContext context) {
     final diff = stats.dreamsThisWeek - stats.dreamsLastWeek;
     String weekMessage;
     if (stats.dreamsLastWeek == 0 && stats.dreamsThisWeek == 0) {
       weekMessage = 'Record dreams this week to see your weekly trend.';
     } else if (stats.dreamsLastWeek == 0) {
-      weekMessage = '${stats.dreamsThisWeek} dream${stats.dreamsThisWeek == 1 ? '' : 's'} this week so far.';
+      weekMessage =
+          '${stats.dreamsThisWeek} dream${stats.dreamsThisWeek == 1 ? '' : 's'} this week so far.';
     } else if (diff > 0) {
-      weekMessage = '${stats.dreamsThisWeek} this week vs ${stats.dreamsLastWeek} last week — you\'re recording more.';
+      weekMessage =
+          '${stats.dreamsThisWeek} this week vs ${stats.dreamsLastWeek} last week — you\'re recording more.';
     } else if (diff < 0) {
-      weekMessage = '${stats.dreamsThisWeek} this week. Last week you had ${stats.dreamsLastWeek} — add one more to keep the habit.';
+      weekMessage =
+          '${stats.dreamsThisWeek} this week. Last week you had ${stats.dreamsLastWeek} — add one more to keep the habit.';
     } else {
-      weekMessage = 'Same as last week (${stats.dreamsThisWeek} dreams). One more would be a step up.';
+      weekMessage =
+          'Same as last week (${stats.dreamsThisWeek} dreams). One more would be a step up.';
     }
 
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('This week', style: AppTheme.heading2),
-          const SizedBox(height: AppTheme.spacing12),
-          Text(
-            weekMessage,
-            style: AppTheme.bodySecondary,
+          Row(
+            children: [
+              Icon(Icons.local_fire_department,
+                  color: AppTheme.primaryColor, size: 22),
+              const SizedBox(width: AppTheme.spacing8),
+              Text('Streak', style: AppTheme.heading2),
+            ],
           ),
-          if (stats.currentStreak > 0) ...[
-            const SizedBox(height: AppTheme.spacing15),
-            Row(
-              children: [
-                Icon(Icons.local_fire_department, color: AppTheme.primaryColor, size: 20),
-                const SizedBox(width: AppTheme.spacing8),
-                Text(
-                  '${stats.currentStreak}-day recording streak',
-                  style: AppTheme.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ],
+          const SizedBox(height: AppTheme.spacing12),
+          if (stats.currentStreak > 0)
+            Text(
+              '${stats.currentStreak}-day recording streak',
+              style: AppTheme.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primaryColor,
+              ),
+            )
+          else
+            Text(
+              'Record on consecutive days to build a streak.',
+              style: AppTheme.bodySecondary,
             ),
-          ],
+          const SizedBox(height: AppTheme.spacing8),
+          Text(weekMessage, style: AppTheme.caption.copyWith(color: AppTheme.textSecondary)),
         ],
       ),
     );
+  }
+
+  Widget _buildWordCloudCard(BuildContext context) {
+    return const _WordCloudCard();
   }
 
   Widget _buildTipsCard(BuildContext context) {

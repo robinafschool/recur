@@ -1,4 +1,5 @@
 -- Add start_time and end_time for single schedule (window: e.g. 08:00–20:00)
+-- Must run after create_reality_checks.
 ALTER TABLE reality_checks
   ADD COLUMN IF NOT EXISTS start_time TEXT,
   ADD COLUMN IF NOT EXISTS end_time TEXT;
