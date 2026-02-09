@@ -18,8 +18,11 @@ class ScheduleScreen extends ConsumerWidget {
       bottomNavigationBar: showNavBar
           ? BottomNavBar(
               currentIndex: NavIndex.schedule,
-              onTap: (index) =>
-                  AppNavigator.navigateToIndex(context, NavIndex.schedule, index),
+              onTap: (index) => AppNavigator.navigateToIndex(
+                context,
+                NavIndex.schedule,
+                index,
+              ),
             )
           : null,
       child: RefreshIndicator(
@@ -33,7 +36,7 @@ class ScheduleScreen extends ConsumerWidget {
             children: [
               const GradientHeader(
                 icon: Icons.schedule,
-                title: 'Reality Check Schedule',
+                title: 'Reality checks',
                 description:
                     'One daily window and interval. Your reminder times appear below.',
               ),

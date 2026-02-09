@@ -12,7 +12,7 @@ class RealityCheckScheduleNotifier extends AsyncNotifier<RealityCheckSchedule> {
   Future<void> saveSchedule(RealityCheckSchedule schedule) async {
     final repo = ref.read(realityCheckRepositoryProvider);
     await repo.saveSchedule(schedule);
-    await refresh();
+    state = AsyncData(schedule);
   }
 
   Future<void> refresh() async {
